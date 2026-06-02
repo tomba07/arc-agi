@@ -13,3 +13,8 @@ class MTObject:
     height: int
     width: int
     touches_border: bool
+
+    @property
+    def normalized_cells(self) -> Set[Cell]:
+        min_row, min_col, _, _ = self.bounding_box
+        return {(r - min_row, c - min_col) for r, c in self.cells}

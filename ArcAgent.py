@@ -3,7 +3,7 @@ import numpy as np
 from ArcProblem import ArcProblem
 from ArcData import ArcData
 from ArcSet import ArcSet
-from helper.MTObjectUtils import find_objects, object_to_mask, normalized_shape
+from helper.MTObjectUtils import find_objects, object_to_mask
 
 class ArcAgent:
     def __init__(self):
@@ -24,13 +24,6 @@ class ArcAgent:
 
         objects = find_objects(grid)
 
-        for obj in objects:
-            print(obj)
-            print("normalized:", normalized_shape(obj))
-            print("mask:")
-            for row in object_to_mask(obj):
-                print(row)
-            print()
         # predictions: list[np.ndarray] = list()
 
         # #Hard Coded Prediction for now
