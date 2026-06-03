@@ -1,37 +1,19 @@
 import numpy as np
 
 from ArcProblem import ArcProblem
-from ArcData import ArcData
-from ArcSet import ArcSet
-from helper.MTObjectUtils import find_objects
+from helper.Observations import observe_example
+
 
 class ArcAgent:
     def __init__(self):
-        """
-        You may add additional variables to this init method. Be aware that it gets called only once
-        and then the make_predictions method will get called several times.
-        """
         pass
 
     def make_predictions(self, arc_problem: ArcProblem) -> list[np.ndarray]:
-        grid = [
-            [0, 0, 2, 2, 0],
-            [0, 0, 2, 2, 0],
-            [1, 0, 0, 0, 3],
-            [1, 0, 4, 0, 3],
-            [0, 0, 4, 4, 3],
-        ]
+        print(f"\n=== {arc_problem.problem_name()} ===")
+        for i, example in enumerate(arc_problem.training_set()):
+            obs = observe_example(
+                example.get_input_data().data(), example.get_output_data().data()
+            )
+            print(f"  example {i + 1}: {obs}")
 
-        objects = find_objects(grid)
-
-        # predictions: list[np.ndarray] = list()
-
-        # #Hard Coded Prediction for now
-        # predictions.append(np.array([
-        #     [0, 0, 6, 6, 6, 6],
-        #     [0, 0, 6, 0, 0, 0],
-        #     [6, 0, 6, 0, 0, 0],
-        #     [6, 6, 6, 6, 0, 0]
-        # ]))
-
-        # return predictions
+        return []
