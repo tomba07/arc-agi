@@ -1,17 +1,17 @@
 from collections import deque
 from typing import List, Set
 
-from helper.MTObject import MTObject, Cell
+from helper.Object import Object, Cell
 
 Grid = List[List[int]]
 
 
-def find_objects(grid: Grid, background: int = 0) -> List[MTObject]:
+def find_objects(grid: Grid, background: int = 0) -> List[Object]:
     rows = len(grid)
     cols = len(grid[0])
 
     visited: Set[Cell] = set()
-    objects: List[MTObject] = []
+    objects: List[Object] = []
 
     for row in range(rows):
         for col in range(cols):
@@ -47,13 +47,13 @@ def _collect_connected_cells(grid: Grid, start_row: int, start_col: int, color: 
     return cells
 
 
-def _build_object(cells: Set[Cell], color: int, rows: int, cols: int) -> MTObject:
+def _build_object(cells: Set[Cell], color: int, rows: int, cols: int) -> Object:
     min_row = min(r for r, _ in cells)
     max_row = max(r for r, _ in cells)
     min_col = min(c for _, c in cells)
     max_col = max(c for _, c in cells)
 
-    return MTObject(
+    return Object(
         color=color,
         cells=cells,
         bounding_box=(min_row, min_col, max_row, max_col),

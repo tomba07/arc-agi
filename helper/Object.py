@@ -5,7 +5,7 @@ Cell = Tuple[int, int]
 
 
 @dataclass
-class MTObject:
+class Object:
     color: int
     cells: Set[Cell]
     bounding_box: Tuple[int, int, int, int]  # (min_row, min_col, max_row, max_col)
