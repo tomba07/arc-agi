@@ -10,6 +10,13 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Run ArcDriver",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/ArcDriver.py",
+            "console": "integratedTerminal"
         }
     ]
 }

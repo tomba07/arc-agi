@@ -2,6 +2,7 @@ import numpy as np
 
 from ArcProblem import ArcProblem
 from helper.Observations import observe_example
+from helper.Theories import SYMMETRY_THEORIES
 
 
 class ArcAgent:
@@ -9,11 +10,14 @@ class ArcAgent:
         pass
 
     def make_predictions(self, arc_problem: ArcProblem) -> list[np.ndarray]:
-        print(f"\n=== {arc_problem.problem_name()} ===")
-        for i, example in enumerate(arc_problem.training_set()):
-            obs = observe_example(
-                example.get_input_data().data(), example.get_output_data().data()
-            )
-            print(f"  example {i + 1}: {obs}")
+        training = arc_problem.training_set()
+        examples = [(ts.get_input_data().data(), ts.get_output_data().data()) for ts in training]
+        test_input = arc_problem.test_set().get_input_data().data()
 
+        for theory in SYMMETRY_THEORIES:
+            if theory.validate(examples):
+                print(f"{arc_problem.problem_name()}: matched theory '{theory.name}'")
+                return [theory.apply(test_input)]
+
+        print(f"{arc_problem.problem_name()}: no theory matched")
         return []
