@@ -3,8 +3,8 @@ from typing import List, Set, Tuple
 
 import numpy as np
 
-from helper.Object import Object, ObjectRelation
-from helper.ObjectUtils import find_objects, compute_relations
+from helper.Object import Object, ObjectRelation, ObjectDelta
+from helper.ObjectUtils import find_objects, compute_relations, compute_object_deltas
 
 
 @dataclass
@@ -19,6 +19,7 @@ class ExampleObservation:
     same_object_count: bool
     input_relations: List[ObjectRelation]
     output_relations: List[ObjectRelation]
+    object_deltas: List[ObjectDelta]
 
 
 @dataclass
@@ -63,4 +64,5 @@ def observe_example(
         same_object_count=len(input_objects) == len(output_objects),
         input_relations=compute_relations(input_objects),
         output_relations=compute_relations(output_objects),
+        object_deltas=compute_object_deltas(input_objects, output_objects),
     )

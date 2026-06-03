@@ -25,3 +25,12 @@ class ObjectRelation:
     type: str
     source: Object
     target: Object
+
+
+@dataclass
+class ObjectDelta:
+    input_object: Object
+    output_object: Object
+    color_changed: bool
+    position_changed: bool
+    shape_changed: bool

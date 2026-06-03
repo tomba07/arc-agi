@@ -1,7 +1,7 @@
 from collections import deque
 from typing import List, Set
 
-from helper.Object import Object, ObjectRelation, Cell
+from helper.Object import Object, ObjectRelation, ObjectDelta, Cell
 
 Grid = List[List[int]]
 
@@ -109,3 +109,28 @@ def _contains(a: Object, b: Object) -> bool:
         and a.bounding_box[3] >= b.bounding_box[3]
         and a != b
     )
+
+
+def compute_object_deltas(
+    input_objects: List[Object], output_objects: List[Object]
+) -> List[ObjectDelta]:
+    deltas = []
+    matched = set()
+
+    for inp in input_objects:
+        match = next(
+            (o for i, o in enumerate(output_objects)
+             if i not in matched and o.normalized_cells == inp.normalized_cells),
+            None,
+        )
+        if match is not None:
+            matched.add(output_objects.index(match))
+            deltas.append(ObjectDelta(
+                input_object=inp,
+                output_object=match,
+                color_changed=inp.color != match.color,
+                position_changed=inp.bounding_box != match.bounding_box,
+                shape_changed=False,
+            ))
+
+    return deltas
