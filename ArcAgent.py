@@ -1,7 +1,7 @@
 import numpy as np
 
 from ArcProblem import ArcProblem
-from helper.Observations import observe_example
+from helper.Observations import observe_example, observe_problem
 from helper.Theories import generate_theories
 
 
@@ -15,9 +15,10 @@ class ArcAgent:
             (ts.get_input_data().data(), ts.get_output_data().data()) for ts in training
         ]
         observations = [observe_example(inp, out) for inp, out in examples]
+        problem = observe_problem(observations)
         test_input = arc_problem.test_set().get_input_data().data()
 
-        for theory in generate_theories(observations):
+        for theory in generate_theories(problem):
             if theory.validate(examples):
                 print(f"{arc_problem.problem_name()}: matched theory '{theory.name}'")
                 return [theory.apply(test_input)]

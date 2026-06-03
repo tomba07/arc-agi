@@ -3,7 +3,7 @@ from typing import Callable, List, Tuple
 
 import numpy as np
 
-from helper.Observations import ExampleObservation
+from helper.Observations import ProblemObservation
 
 Grid = np.ndarray
 
@@ -39,14 +39,15 @@ CROP_THEORY = Theory("crop_to_content", _crop_to_content)
 
 
 def color_substitution_theories(
-    observations: List[ExampleObservation],
+    problem: ProblemObservation,
 ) -> List[Theory]:
+    first = problem.examples[0]
     all_colors = (
-        {obj.color for obj in observations[0].input_objects}
-        | {obj.color for obj in observations[0].output_objects}
+        {obj.color for obj in first.input_objects}
+        | {obj.color for obj in first.output_objects}
         | {0}
     )
-    source_colors = {obj.color for obj in observations[0].input_objects}
+    source_colors = {obj.color for obj in first.input_objects}
 
     theories = []
     for a in source_colors:
@@ -60,9 +61,9 @@ def color_substitution_theories(
     return theories
 
 
-def generate_theories(observations: List[ExampleObservation]) -> List[Theory]:
+def generate_theories(problem: ProblemObservation) -> List[Theory]:
     return [
         *SYMMETRY_THEORIES,
         CROP_THEORY,
-        *color_substitution_theories(observations),
+        *color_substitution_theories(problem),
     ]

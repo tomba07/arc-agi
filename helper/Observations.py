@@ -21,6 +21,25 @@ class ExampleObservation:
     output_relations: List[ObjectRelation]
 
 
+@dataclass
+class ProblemObservation:
+    examples: List[ExampleObservation]
+    same_grid_size: bool
+    colors_removed: bool
+    colors_added: bool
+    same_object_count: bool
+
+
+def observe_problem(examples: List[ExampleObservation]) -> ProblemObservation:
+    return ProblemObservation(
+        examples=examples,
+        same_grid_size=all(e.same_grid_size for e in examples),
+        colors_removed=len({frozenset(e.colors_removed) for e in examples}) == 1,
+        colors_added=len({frozenset(e.colors_added) for e in examples}) == 1,
+        same_object_count=all(e.same_object_count for e in examples),
+    )
+
+
 def observe_example(
     input_grid: np.ndarray, output_grid: np.ndarray
 ) -> ExampleObservation:
