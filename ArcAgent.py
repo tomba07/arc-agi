@@ -2,7 +2,7 @@ import numpy as np
 
 from ArcProblem import ArcProblem
 from helper.Observations import observe_example
-from helper.Theories import SYMMETRY_THEORIES, CROP_THEORY, color_substitution_theories
+from helper.Theories import generate_theories
 
 
 class ArcAgent:
@@ -17,13 +17,7 @@ class ArcAgent:
         observations = [observe_example(inp, out) for inp, out in examples]
         test_input = arc_problem.test_set().get_input_data().data()
 
-        theories = [
-            *SYMMETRY_THEORIES,
-            CROP_THEORY,
-            *color_substitution_theories(observations),
-        ]
-
-        for theory in theories:
+        for theory in generate_theories(observations):
             if theory.validate(examples):
                 print(f"{arc_problem.problem_name()}: matched theory '{theory.name}'")
                 return [theory.apply(test_input)]

@@ -41,12 +41,16 @@ CROP_THEORY = Theory("crop_to_content", _crop_to_content)
 def color_substitution_theories(
     observations: List[ExampleObservation],
 ) -> List[Theory]:
-    removed = observations[0].colors_removed
-    added = observations[0].colors_added
+    all_colors = (
+        {obj.color for obj in observations[0].input_objects}
+        | {obj.color for obj in observations[0].output_objects}
+        | {0}
+    )
+    source_colors = {obj.color for obj in observations[0].input_objects}
 
     theories = []
-    for a in removed:
-        for b in added if added else {0}:
+    for a in source_colors:
+        for b in all_colors - {a}:
             theories.append(
                 Theory(
                     f"replace_{a}_with_{b}",
@@ -54,3 +58,11 @@ def color_substitution_theories(
                 )
             )
     return theories
+
+
+def generate_theories(observations: List[ExampleObservation]) -> List[Theory]:
+    return [
+        *SYMMETRY_THEORIES,
+        CROP_THEORY,
+        *color_substitution_theories(observations),
+    ]
