@@ -30,7 +30,15 @@ def find_objects(grid: Grid, background: int = 0) -> List[Object]:
     return objects
 
 
-def _collect_connected_cells(grid: Grid, start_row: int, start_col: int, color: int, rows: int, cols: int, visited: Set[Cell]) -> Set[Cell]:
+def _collect_connected_cells(
+    grid: Grid,
+    start_row: int,
+    start_col: int,
+    color: int,
+    rows: int,
+    cols: int,
+    visited: Set[Cell],
+) -> Set[Cell]:
     queue = deque([(start_row, start_col)])
     visited.add((start_row, start_col))
     cells: Set[Cell] = set()
@@ -60,7 +68,9 @@ def _build_object(cells: Set[Cell], color: int, rows: int, cols: int) -> Object:
         area=len(cells),
         height=max_row - min_row + 1,
         width=max_col - min_col + 1,
-        touches_border=(min_row == 0 or min_col == 0 or max_row == rows - 1 or max_col == cols - 1),
+        touches_border=(
+            min_row == 0 or min_col == 0 or max_row == rows - 1 or max_col == cols - 1
+        ),
     )
 
 

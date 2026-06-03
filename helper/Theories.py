@@ -3,6 +3,8 @@ from typing import Callable, List, Tuple
 
 import numpy as np
 
+from helper.Observations import ExampleObservation
+
 Grid = np.ndarray
 
 
@@ -16,13 +18,13 @@ class Theory:
 
 
 SYMMETRY_THEORIES = [
-    Theory("rotate_90",       lambda g: np.rot90(g, k=1)),
-    Theory("rotate_180",      lambda g: np.rot90(g, k=2)),
-    Theory("rotate_270",      lambda g: np.rot90(g, k=3)),
-    Theory("flip_lr",         lambda g: np.fliplr(g)),
-    Theory("flip_ud",         lambda g: np.flipud(g)),
-    Theory("transpose",       lambda g: g.T),
-    Theory("anti_transpose",  lambda g: np.rot90(g.T)),
+    Theory("rotate_90", lambda g: np.rot90(g, k=1)),
+    Theory("rotate_180", lambda g: np.rot90(g, k=2)),
+    Theory("rotate_270", lambda g: np.rot90(g, k=3)),
+    Theory("flip_lr", lambda g: np.fliplr(g)),
+    Theory("flip_ud", lambda g: np.flipud(g)),
+    Theory("transpose", lambda g: g.T),
+    Theory("anti_transpose", lambda g: np.rot90(g.T)),
 ]
 
 
@@ -30,7 +32,25 @@ def _crop_to_content(grid: Grid) -> Grid:
     rows, cols = np.where(grid != 0)
     if len(rows) == 0:
         return grid
-    return grid[rows.min():rows.max() + 1, cols.min():cols.max() + 1]
+    return grid[rows.min() : rows.max() + 1, cols.min() : cols.max() + 1]
 
 
 CROP_THEORY = Theory("crop_to_content", _crop_to_content)
+
+
+def color_substitution_theories(
+    observations: List[ExampleObservation],
+) -> List[Theory]:
+    removed = observations[0].colors_removed
+    added = observations[0].colors_added
+
+    theories = []
+    for a in removed:
+        for b in added if added else {0}:
+            theories.append(
+                Theory(
+                    f"replace_{a}_with_{b}",
+                    lambda g, a=a, b=b: np.where(g == a, b, g),
+                )
+            )
+    return theories

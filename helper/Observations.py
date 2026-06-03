@@ -19,7 +19,9 @@ class ExampleObservation:
     same_object_count: bool
 
 
-def observe_example(input_grid: np.ndarray, output_grid: np.ndarray) -> ExampleObservation:
+def observe_example(
+    input_grid: np.ndarray, output_grid: np.ndarray
+) -> ExampleObservation:
     input_grid_size = input_grid.shape
     output_grid_size = output_grid.shape
 
