@@ -61,9 +61,17 @@ def color_substitution_theories(
     return theories
 
 
-def generate_theories(problem: ProblemObservation) -> List[Theory]:
+def generate_phase1_theories(problem: ProblemObservation) -> List[Theory]:
     return [
         *SYMMETRY_THEORIES,
         CROP_THEORY,
         *color_substitution_theories(problem),
     ]
+
+
+def generate_phase2_theories(problem: ProblemObservation) -> List[Theory]:
+    return []
+
+
+def generate_theories(problem: ProblemObservation) -> List[Theory]:
+    return [*generate_phase1_theories(problem), *generate_phase2_theories(problem)]

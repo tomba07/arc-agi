@@ -2,7 +2,7 @@ import numpy as np
 
 from ArcProblem import ArcProblem
 from helper.Observations import observe_example, observe_problem
-from helper.Theories import generate_theories
+from helper.Theories import generate_phase1_theories, generate_phase2_theories
 
 
 class ArcAgent:
@@ -18,9 +18,14 @@ class ArcAgent:
         problem = observe_problem(observations)
         test_input = arc_problem.test_set().get_input_data().data()
 
-        for theory in generate_theories(problem):
+        for theory in generate_phase1_theories(problem):
             if theory.validate(examples):
-                print(f"{arc_problem.problem_name()}: matched theory '{theory.name}'")
+                print(f"{arc_problem.problem_name()}: matched theory '{theory.name}' (phase 1)")
+                return [theory.apply(test_input)]
+
+        for theory in generate_phase2_theories(problem):
+            if theory.validate(examples):
+                print(f"{arc_problem.problem_name()}: matched theory '{theory.name}' (phase 2)")
                 return [theory.apply(test_input)]
 
         print(f"{arc_problem.problem_name()}: no theory matched")
