@@ -24,3 +24,13 @@ SYMMETRY_THEORIES = [
     Theory("transpose",       lambda g: g.T),
     Theory("anti_transpose",  lambda g: np.rot90(g.T)),
 ]
+
+
+def _crop_to_content(grid: Grid) -> Grid:
+    rows, cols = np.where(grid != 0)
+    if len(rows) == 0:
+        return grid
+    return grid[rows.min():rows.max() + 1, cols.min():cols.max() + 1]
+
+
+CROP_THEORY = Theory("crop_to_content", _crop_to_content)

@@ -2,10 +2,14 @@ import numpy as np
 
 from ArcProblem import ArcProblem
 from helper.Observations import observe_example
-from helper.Theories import SYMMETRY_THEORIES
+from helper.Theories import SYMMETRY_THEORIES, CROP_THEORY
 
 
 class ArcAgent:
+    THEORIES = [
+        *SYMMETRY_THEORIES,
+        CROP_THEORY,
+    ]
     def __init__(self):
         pass
 
@@ -14,7 +18,7 @@ class ArcAgent:
         examples = [(ts.get_input_data().data(), ts.get_output_data().data()) for ts in training]
         test_input = arc_problem.test_set().get_input_data().data()
 
-        for theory in SYMMETRY_THEORIES:
+        for theory in self.THEORIES:
             if theory.validate(examples):
                 print(f"{arc_problem.problem_name()}: matched theory '{theory.name}'")
                 return [theory.apply(test_input)]
