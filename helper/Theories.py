@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, List, Tuple
+from typing import Callable, List, Set, Tuple
 
 import numpy as np
 
@@ -61,15 +61,37 @@ def color_substitution_theories(
     return theories
 
 
-def generate_phase1_theories(problem: ProblemObservation) -> List[Theory]:
-    return [
-        *SYMMETRY_THEORIES,
-        CROP_THEORY,
-        *color_substitution_theories(problem),
+_INDICATION_MAP: dict[str, Callable[[str], bool]] = {
+    "color_substitution": lambda n: n.startswith("replace_"),
+    "crop": lambda n: n == "crop_to_content",
+    "symmetry": lambda n: n in {
+        "rotate_90", "rotate_180", "rotate_270",
+        "flip_lr", "flip_ud", "transpose", "anti_transpose",
+    },
+}
+
+
+def _reorder(theories: List[Theory], indications: Set[str]) -> List[Theory]:
+    if not indications:
+        return theories
+    indicated = [
+        t for t in theories
+        if any(_INDICATION_MAP[ind](t.name) for ind in indications if ind in _INDICATION_MAP)
     ]
+    rest = [t for t in theories if t not in indicated]
+    return [*indicated, *rest]
 
 
-def generate_phase2_theories(problem: ProblemObservation) -> List[Theory]:
+def generate_phase1_theories(
+    problem: ProblemObservation, indications: Set[str] = frozenset()
+) -> List[Theory]:
+    all_theories = [*SYMMETRY_THEORIES, CROP_THEORY, *color_substitution_theories(problem)]
+    return _reorder(all_theories, indications)
+
+
+def generate_phase2_theories(
+    problem: ProblemObservation, indications: Set[str] = frozenset()
+) -> List[Theory]:
     return []
 
 

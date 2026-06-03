@@ -14,3 +14,156 @@ ed36ccf7: -90 deg rotation
 f25ffba3: mirror horizontally
 f76d97a5: color changes
 f2829549: divider and nor
+
+
+----------------
+1cf80156: crop
+    - observations:
+        - object persists
+        - grid size changes
+        - object moves
+    - theory
+        - always one object
+        - output size always the same as object size
+    - transformations
+        - crop
+            - grid size changed to object size
+            - object moved to 0,0
+28e73c20: spiral
+ - TBD
+0520fde7: and
+    - observations
+        - object(s) deleted (left)
+        - object(s) deleted (right)
+        - object(s) deleted (middle)
+        - object(s) created
+        - line is in center
+        - object is left of line
+        - object is right of line
+        - objects have same color
+        - output grid same size as left side of line
+        - (strong correlation between output and sides of line)
+        - output grid same size as right side of line
+        - (strong correlation between output and sides of line)
+        - cell is filled at same relative position for left side of line, right side of line and output
+        - (in the head, we divide the input into two inputs)
+        - divider concept
+    - theory
+        - input always the same size
+        - output always the same size
+    - transformation
+        - grid size change
+        - objects deletion
+        - object(s) creation
+623ea044: draw diagonal
+    - observations
+        - grid size remains
+        - object persists
+        - objects created
+            - 2 diagonal lines
+            - go through persisting object 
+    - theory
+        - always one input object
+        - always two output lines
+    - transformation
+        - grid size change
+        - object(s) creation
+4347f46a: make hollow
+    - observations 
+        - grid size similar
+        - objects change
+            - filled -> hollow
+    - theory
+        - all objects hollow
+    - transformations
+        - make objects hollow
+6150a2bd: rotate 180
+    - observations
+        - grid sizes similar
+        - objects move & rotate
+        - grid rotates
+    - transformations
+        rotate grid
+6430c8c4: divider & nor
+    - similar to above
+b94a9452: crop and invert
+    - observations
+        - grid size changes
+        - output grid similar to object
+        - single object (containing other)
+        - object persists
+    - theory
+        - always single object
+        - always containing other
+        - color always changing
+    - transformations 
+        - crop
+            - resize grid
+            - move objects
+        - recolor objects
+        
+b1948b0a: color change
+    - observations
+        - objects persisting with color change
+    - theory
+        - pink always turns red
+    - transformations
+        - color change
+ce4f8723: divider & or
+    - similar to above
+ce22a75a: grow and color change
+    - observations
+        - grid size remains
+        - all input objects are 1x1 gray cells
+        - objects persist (central position)
+        - objects grow to 3x3 blue squares
+    - transformations
+        - grow
+        - recolor
+d687bc17: colored walls attract cells
+    - observations
+        - lines remain
+        - 1x1 cells remain but move
+        - cells move in direction perpendicular to line direction of same color
+    - transformations
+        - move single cells
+ed36ccf7: -90 deg rotation
+    - observations
+        - object persists (with rotation)
+    - transformations
+        - rotate grid
+f25ffba3: mirror horizontally
+    - observations
+        - looks like grid mirrored
+    - transformations
+        - mirror grid
+f76d97a5: color changes
+    - observations
+        - input always has gray and other color
+        - output always has black and same other color
+        - shapes retains with color change
+    - transformations
+        - color changes
+f2829549: divider and nor
+    - similar to above
+
+------------------
+primitives
+observation properties:
+ - object is_hollow
+
+transformations:
+ - grid
+  - change size
+ - object:
+  - color change
+  - move
+    - direction, 
+ 
+
+indications
+ - single object -> focus on object
+ - line going across -> divide input
+
+others:
+ - divide input
