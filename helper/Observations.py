@@ -3,8 +3,8 @@ from typing import List, Set, Tuple
 
 import numpy as np
 
-from helper.Object import Object
-from helper.ObjectUtils import find_objects
+from helper.Object import Object, ObjectRelation
+from helper.ObjectUtils import find_objects, compute_relations
 
 
 @dataclass
@@ -17,6 +17,8 @@ class ExampleObservation:
     input_objects: List[Object]
     output_objects: List[Object]
     same_object_count: bool
+    input_relations: List[ObjectRelation]
+    output_relations: List[ObjectRelation]
 
 
 def observe_example(
@@ -40,4 +42,6 @@ def observe_example(
         input_objects=input_objects,
         output_objects=output_objects,
         same_object_count=len(input_objects) == len(output_objects),
+        input_relations=compute_relations(input_objects),
+        output_relations=compute_relations(output_objects),
     )

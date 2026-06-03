@@ -1,7 +1,7 @@
 from collections import deque
 from typing import List, Set
 
-from helper.Object import Object, Cell
+from helper.Object import Object, ObjectRelation, Cell
 
 Grid = List[List[int]]
 
@@ -79,3 +79,33 @@ def _get_neighbors(row: int, col: int, rows: int, cols: int):
         new_row, new_col = row + row_diff, col + col_diff
         if 0 <= new_row < rows and 0 <= new_col < cols:
             yield new_row, new_col
+
+
+def compute_relations(objects: List[Object]) -> List[ObjectRelation]:
+    relations = []
+    for i, a in enumerate(objects):
+        for b in objects[i + 1:]:
+            if a.normalized_cells == b.normalized_cells:
+                relations.append(ObjectRelation("same_shape", a, b))
+            if a.color == b.color:
+                relations.append(ObjectRelation("same_color", a, b))
+            if _contains(a, b):
+                relations.append(ObjectRelation("contains", a, b))
+                relations.append(ObjectRelation("contained_by", b, a))
+            if a.bounding_box[2] < b.bounding_box[0]:
+                relations.append(ObjectRelation("above", a, b))
+                relations.append(ObjectRelation("below", b, a))
+            if a.bounding_box[3] < b.bounding_box[1]:
+                relations.append(ObjectRelation("left_of", a, b))
+                relations.append(ObjectRelation("right_of", b, a))
+    return relations
+
+
+def _contains(a: Object, b: Object) -> bool:
+    return (
+        a.bounding_box[0] <= b.bounding_box[0]
+        and a.bounding_box[1] <= b.bounding_box[1]
+        and a.bounding_box[2] >= b.bounding_box[2]
+        and a.bounding_box[3] >= b.bounding_box[3]
+        and a != b
+    )

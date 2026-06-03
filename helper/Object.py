@@ -18,3 +18,10 @@ class Object:
     def normalized_cells(self) -> Set[Cell]:
         min_row, min_col, _, _ = self.bounding_box
         return {(r - min_row, c - min_col) for r, c in self.cells}
+
+
+@dataclass
+class ObjectRelation:
+    type: str
+    source: Object
+    target: Object
