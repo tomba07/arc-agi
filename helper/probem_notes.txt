@@ -1,0 +1,16 @@
+1cf80156: crop
+28e73c20: spiral
+0520fde7: and
+623ea044: draw diagonal
+4347f46a: make hollow
+6150a2bd: rotate 180
+6430c8c4: divider & nor
+b94a9452: crop and invert
+b1948b0a: color change
+ce4f8723: divider & or
+ce22a75a: grow and color change
+d687bc17: colored walls attract cells
+ed36ccf7: -90 deg rotation
+f25ffba3: mirror horizontally
+f76d97a5: color changes
+f2829549: divider and nor

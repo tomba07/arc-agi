@@ -3,7 +3,7 @@ import numpy as np
 from ArcProblem import ArcProblem
 from ArcData import ArcData
 from ArcSet import ArcSet
-from helper.MTObjectUtils import find_objects, object_to_mask
+from helper.MTObjectUtils import find_objects
 
 class ArcAgent:
     def __init__(self):
