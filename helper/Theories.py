@@ -4,6 +4,12 @@ from typing import Callable, List, Set, Tuple
 import numpy as np
 
 from helper.Observations import ProblemObservation
+from helper.Transformations import (
+    boolean_combine,
+    grow_cells,
+    make_hollow,
+    split_at_divider,
+)
 
 Grid = np.ndarray
 
@@ -68,6 +74,9 @@ _INDICATION_MAP: dict[str, Callable[[str], bool]] = {
         "rotate_90", "rotate_180", "rotate_270",
         "flip_lr", "flip_ud", "transpose", "anti_transpose",
     },
+    "hollow": lambda n: n == "make_hollow",
+    "expand": lambda n: n.startswith("grow_"),
+    "divider": lambda n: n.startswith("divider_"),
 }
 
 
@@ -92,8 +101,34 @@ def generate_phase1_theories(
 def generate_phase2_theories(
     problem: ProblemObservation, indications: Set[str] = frozenset()
 ) -> List[Theory]:
-    return []
+    theories: List[Theory] = []
+
+    if "hollow" in indications:
+        theories.append(Theory("make_hollow", make_hollow))
+
+    if "expand" in indications:
+        first = problem.examples[0]
+        if first.output_objects:
+            out_obj = first.output_objects[0]
+            scale = out_obj.height
+            new_color = out_obj.color
+            theories.append(Theory(
+                f"grow_{scale}x_to_{new_color}",
+                lambda g, s=scale, c=new_color: grow_cells(g, s, c),
+            ))
+
+    if "divider" in indications:
+        first = problem.examples[0]
+        output_color = next(iter(first.colors_added), 1)
+        for op in ["and", "or", "nor"]:
+            theories.append(Theory(
+                f"divider_{op}",
+                lambda g, op=op, oc=output_color: boolean_combine(*split_at_divider(g), op, oc),
+            ))
+
+    return theories
 
 
 def generate_theories(problem: ProblemObservation) -> List[Theory]:
     return [*generate_phase1_theories(problem), *generate_phase2_theories(problem)]
+

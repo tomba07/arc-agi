@@ -24,4 +24,13 @@ def compute_indications(problem: ProblemObservation) -> Set[str]:
     if problem.same_grid_size and problem.same_object_count:
         indications.add("symmetry")
 
+    if problem.same_grid_size and problem.all_filled_rectangles:
+        indications.add("hollow")
+
+    if problem.all_single_cells:
+        indications.add("expand")
+
+    if problem.has_divider:
+        indications.add("divider")
+
     return indications
