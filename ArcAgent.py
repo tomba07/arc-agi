@@ -1,7 +1,7 @@
 import numpy as np
 
 from ArcProblem import ArcProblem
-from helper.Theories import all_transforms, search
+from helper.Theories import search
 
 
 class ArcAgent:
@@ -15,8 +15,7 @@ class ArcAgent:
         ]
         test_input = arc_problem.test_set().get_input_data().data()
 
-        transforms = all_transforms(examples)
-        for name, fn in search(transforms, examples):
+        for name, fn in search(examples):
             print(f"{arc_problem.problem_name()}: matched '{name}'")
             return [fn(test_input)]
 
