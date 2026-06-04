@@ -50,10 +50,6 @@ def recolor_nonzero(grid: Grid, color: int) -> Grid:
 # Composed transformations
 # ---------------------------------------------------------------------------
 
-def make_hollow(grid: Grid) -> Grid:
-    return mask_subtract(grid, erode(grid))
-
-
 def grow_cells(grid: Grid, scale: int, new_color: int) -> Grid:
     return recolor_nonzero(dilate_square(grid, scale // 2), new_color)
 
