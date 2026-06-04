@@ -1,134 +1,122 @@
-from dataclasses import dataclass
-from typing import Callable, List, Set, Tuple
+from typing import Callable, Generator, List, Tuple
 
 import numpy as np
 
-from helper.Observations import ProblemObservation
 from helper.Transformations import (
+    DIRECTIONS_ALL_8,
+    DIRECTIONS_DIAGONAL,
+    DIRECTIONS_ORTHOGONAL,
     boolean_combine,
-    grow_cells,
+    dilate_square,
+    draw_clockwise_spiral,
+    erode,
+    find_divider,
     make_hollow,
-    split_at_divider,
+    mask_subtract,
+    ray_fill,
+    recolor_nonzero,
+    remap_replace_keep,
+    snap_to_border,
+    swap_two_nonzero,
 )
 
 Grid = np.ndarray
-
-
-@dataclass
-class Theory:
-    name: str
-    apply: Callable[[Grid], Grid]
-
-    def validate(self, examples: List[Tuple[Grid, Grid]]) -> bool:
-        return all(np.array_equal(self.apply(inp), out) for inp, out in examples)
-
-
-SYMMETRY_THEORIES = [
-    Theory("rotate_90", lambda g: np.rot90(g, k=1)),
-    Theory("rotate_180", lambda g: np.rot90(g, k=2)),
-    Theory("rotate_270", lambda g: np.rot90(g, k=3)),
-    Theory("flip_lr", lambda g: np.fliplr(g)),
-    Theory("flip_ud", lambda g: np.flipud(g)),
-    Theory("transpose", lambda g: g.T),
-    Theory("anti_transpose", lambda g: np.rot90(g.T)),
-]
+Transform = Tuple[str, Callable[[Grid], Grid]]
 
 
 def _crop_to_content(grid: Grid) -> Grid:
     rows, cols = np.where(grid != 0)
     if len(rows) == 0:
         return grid
-    return grid[rows.min() : rows.max() + 1, cols.min() : cols.max() + 1]
+    return grid[rows.min(): rows.max() + 1, cols.min(): cols.max() + 1]
 
 
-CROP_THEORY = Theory("crop_to_content", _crop_to_content)
-
-
-def color_substitution_theories(
-    problem: ProblemObservation,
-) -> List[Theory]:
-    first = problem.examples[0]
-    all_colors = (
-        {obj.color for obj in first.input_objects}
-        | {obj.color for obj in first.output_objects}
-        | {0}
-    )
-    source_colors = {obj.color for obj in first.input_objects}
-
-    theories = []
-    for a in source_colors:
-        for b in all_colors - {a}:
-            theories.append(
-                Theory(
-                    f"replace_{a}_with_{b}",
-                    lambda g, a=a, b=b: np.where(g == a, b, g),
-                )
-            )
-    return theories
-
-
-_INDICATION_MAP: dict[str, Callable[[str], bool]] = {
-    "color_substitution": lambda n: n.startswith("replace_"),
-    "crop": lambda n: n == "crop_to_content",
-    "symmetry": lambda n: n in {
-        "rotate_90", "rotate_180", "rotate_270",
-        "flip_lr", "flip_ud", "transpose", "anti_transpose",
-    },
-    "hollow": lambda n: n == "make_hollow",
-    "expand": lambda n: n.startswith("grow_"),
-    "divider": lambda n: n.startswith("divider_"),
-}
-
-
-def _reorder(theories: List[Theory], indications: Set[str]) -> List[Theory]:
-    if not indications:
-        return theories
-    indicated = [
-        t for t in theories
-        if any(_INDICATION_MAP[ind](t.name) for ind in indications if ind in _INDICATION_MAP)
+def all_transforms(examples: List[Tuple[Grid, Grid]]) -> List[Transform]:
+    fns: List[Transform] = [
+        # Symmetry
+        ("rotate_90",           lambda g: np.rot90(g, k=1)),
+        ("rotate_180",          lambda g: np.rot90(g, k=2)),
+        ("rotate_270",          lambda g: np.rot90(g, k=3)),
+        ("flip_lr",             np.fliplr),
+        ("flip_ud",             np.flipud),
+        ("transpose",           lambda g: g.T),
+        ("anti_transpose",      lambda g: np.rot90(g.T)),
+        # Crop
+        ("crop_to_content",     _crop_to_content),
+        # Morphological
+        ("erode",               erode),
+        ("make_hollow",         make_hollow),
+        ("ray_fill_diagonal",   lambda g: ray_fill(g, DIRECTIONS_DIAGONAL)),
+        ("ray_fill_orthogonal", lambda g: ray_fill(g, DIRECTIONS_ORTHOGONAL)),
+        ("ray_fill_all8",       lambda g: ray_fill(g, DIRECTIONS_ALL_8)),
+        # Overlay / combination
+        ("overlay_flip_ud",     lambda g: np.maximum(g, np.flipud(g))),
+        ("overlay_flip_lr",     lambda g: np.maximum(g, np.fliplr(g))),
+        ("swap_two_nonzero",    swap_two_nonzero),
+        # Spatial
+        ("snap_to_border",      snap_to_border),
+        ("draw_clockwise_spiral", draw_clockwise_spiral),
     ]
-    rest = [t for t in theories if t not in indicated]
-    return [*indicated, *rest]
 
+    # Color substitutions: enumerate all color pairs
+    for a in range(1, 10):
+        for b in range(0, 10):
+            if a != b:
+                fns.append((
+                    f"replace_{a}_with_{b}",
+                    lambda g, a=a, b=b: np.where(g == a, b, g).astype(g.dtype),
+                ))
+        fns.append((f"remap_replace_{a}", lambda g, a=a: remap_replace_keep(g, a)))
 
-def generate_phase1_theories(
-    problem: ProblemObservation, indications: Set[str] = frozenset()
-) -> List[Theory]:
-    all_theories = [*SYMMETRY_THEORIES, CROP_THEORY, *color_substitution_theories(problem)]
-    return _reorder(all_theories, indications)
-
-
-def generate_phase2_theories(
-    problem: ProblemObservation, indications: Set[str] = frozenset()
-) -> List[Theory]:
-    theories: List[Theory] = []
-
-    if "hollow" in indications:
-        theories.append(Theory("make_hollow", make_hollow))
-
-    if "expand" in indications:
-        first = problem.examples[0]
-        if first.output_objects:
-            out_obj = first.output_objects[0]
-            scale = out_obj.height
-            new_color = out_obj.color
-            theories.append(Theory(
-                f"grow_{scale}x_to_{new_color}",
-                lambda g, s=scale, c=new_color: grow_cells(g, s, c),
+    # Scale: enumerate plausible scales and output colors
+    for scale in [2, 3, 4, 5]:
+        for color in range(1, 10):
+            fns.append((
+                f"scale_{scale}x_color_{color}",
+                lambda g, s=scale, c=color: recolor_nonzero(dilate_square(g, s // 2), c),
             ))
 
-    if "divider" in indications:
-        first = problem.examples[0]
-        output_color = next(iter(first.colors_added), 1)
+    # Boolean combine: derive split point from first training example
+    try:
+        axis, idx = find_divider(examples[0][0])
+        inp_colors = set(np.unique(examples[0][0])) - {0}
+        out_colors = set(np.unique(examples[0][1])) - {0}
+        output_color = next(iter(out_colors - inp_colors), 1)
+
+        def _split(g, a=axis, i=idx):
+            return (g[:, :i], g[:, i + 1:]) if a == "col" else (g[:i, :], g[i + 1:, :])
+
         for op in ["and", "or", "nor"]:
-            theories.append(Theory(
+            fns.append((
                 f"divider_{op}",
-                lambda g, op=op, oc=output_color: boolean_combine(*split_at_divider(g), op, oc),
+                lambda g, op=op, oc=output_color: boolean_combine(*_split(g), op, oc),
             ))
+    except (ValueError, IndexError):
+        pass
 
-    return theories
+    return fns
 
 
-def generate_theories(problem: ProblemObservation) -> List[Theory]:
-    return [*generate_phase1_theories(problem), *generate_phase2_theories(problem)]
+def search(
+    transforms: List[Transform],
+    examples: List[Tuple[Grid, Grid]],
+    max_depth: int = 2,
+) -> Generator[Tuple[str, Callable[[Grid], Grid]], None, None]:
+    def validates(fn: Callable[[Grid], Grid]) -> bool:
+        try:
+            return all(np.array_equal(fn(inp), out) for inp, out in examples)
+        except Exception:
+            return False
 
+    for name, fn in transforms:
+        if validates(fn):
+            yield name, fn
+
+    if max_depth < 2:
+        return
+
+    for n1, f1 in transforms:
+        for n2, f2 in transforms:
+            composed = lambda g, a=f1, b=f2: b(a(g))
+            if validates(composed):
+                yield f"{n1}+{n2}", composed
