@@ -1,10 +1,10 @@
 from dataclasses import dataclass
-from typing import List, Set, Tuple
+from typing import List, Optional, Set, Tuple
 
 import numpy as np
 
 from helper.Object import Object, ObjectRelation, ObjectDelta
-from helper.ObjectUtils import find_objects, compute_relations, compute_object_deltas
+from helper.ObjectUtils import find_objects, compute_relations, compute_object_deltas, find_divider
 
 
 @dataclass
@@ -23,6 +23,8 @@ class ExampleObservation:
     all_input_objects_are_single_cells: bool
     all_input_objects_are_filled_rectangles: bool
     has_divider: bool
+    divider_axis: Optional[str]
+    divider_index: Optional[int]
 
 
 @dataclass
@@ -53,8 +55,6 @@ def observe_problem(examples: List[ExampleObservation]) -> ProblemObservation:
 def observe_example(
     input_grid: np.ndarray, output_grid: np.ndarray
 ) -> ExampleObservation:
-    from helper.Transformations import find_divider
-
     input_grid_size = input_grid.shape
     output_grid_size = output_grid.shape
 
@@ -65,9 +65,10 @@ def observe_example(
     output_objects = find_objects(output_grid.tolist())
 
     try:
-        find_divider(input_grid)
+        divider_axis, divider_index = find_divider(input_grid)
         has_divider = True
     except ValueError:
+        divider_axis, divider_index = None, None
         has_divider = False
 
     return ExampleObservation(
@@ -91,4 +92,6 @@ def observe_example(
             )
         ),
         has_divider=has_divider,
+        divider_axis=divider_axis,
+        divider_index=divider_index,
     )

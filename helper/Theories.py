@@ -8,7 +8,6 @@ from helper.Transformations import (
     boolean_combine,
     grow_cells,
     make_hollow,
-    split_at_divider,
 )
 
 Grid = np.ndarray
@@ -120,10 +119,19 @@ def generate_phase2_theories(
     if "divider" in indications:
         first = problem.examples[0]
         output_color = next(iter(first.colors_added), 1)
+        axis = first.divider_axis
+        idx = first.divider_index
+
+        # Framing: split grid at observed divider position (axis + index from observation)
+        def _split(g, a=axis, i=idx):
+            if a == "col":
+                return g[:, :i], g[:, i + 1:]
+            return g[:i, :], g[i + 1:, :]
+
         for op in ["and", "or", "nor"]:
             theories.append(Theory(
                 f"divider_{op}",
-                lambda g, op=op, oc=output_color: boolean_combine(*split_at_divider(g), op, oc),
+                lambda g, op=op, oc=output_color: boolean_combine(*_split(g), op, oc),
             ))
 
     return theories

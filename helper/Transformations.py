@@ -2,6 +2,10 @@ from typing import Tuple
 
 import numpy as np
 
+# Transformations are pure Grid → Grid functions.
+# Framings (parameterized decompositions using observation data) are expressed
+# as closures in theory factories, not as standalone functions here.
+
 Grid = np.ndarray
 
 
@@ -26,28 +30,6 @@ def grow_cells(grid: Grid, scale: int, new_color: int) -> Grid:
                 result[max(0, r - half):min(rows, r + half + 1),
                        max(0, c - half):min(cols, c + half + 1)] = new_color
     return result
-
-
-def find_divider(grid: Grid) -> Tuple[str, int]:
-    rows, cols = grid.shape
-    for c in range(cols):
-        col = grid[:, c]
-        color = int(col[0])
-        if color != 0 and np.all(col == color) and int(np.sum(grid == color)) == rows:
-            return "col", c
-    for r in range(rows):
-        row = grid[r, :]
-        color = int(row[0])
-        if color != 0 and np.all(row == color) and int(np.sum(grid == color)) == cols:
-            return "row", r
-    raise ValueError("No divider found")
-
-
-def split_at_divider(grid: Grid) -> Tuple[Grid, Grid]:
-    axis, idx = find_divider(grid)
-    if axis == "col":
-        return grid[:, :idx], grid[:, idx + 1:]
-    return grid[:idx, :], grid[idx + 1:, :]
 
 
 def boolean_combine(left: Grid, right: Grid, op: str, output_color: int) -> Grid:

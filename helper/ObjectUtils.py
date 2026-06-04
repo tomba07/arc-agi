@@ -1,9 +1,12 @@
 from collections import deque
-from typing import List, Set
+from typing import List, Optional, Set, Tuple
+
+import numpy as np
 
 from helper.Object import Object, ObjectRelation, ObjectDelta, Cell
 
 Grid = List[List[int]]
+NpGrid = np.ndarray
 
 
 def find_objects(grid: Grid, background: int = 0) -> List[Object]:
@@ -134,3 +137,19 @@ def compute_object_deltas(
             ))
 
     return deltas
+
+
+def find_divider(grid: NpGrid) -> Tuple[str, int]:
+    """Return (axis, index) of the unique-color full-span row or column that acts as a divider."""
+    rows, cols = grid.shape
+    for c in range(cols):
+        col = grid[:, c]
+        color = int(col[0])
+        if color != 0 and np.all(col == color) and int(np.sum(grid == color)) == rows:
+            return "col", c
+    for r in range(rows):
+        row = grid[r, :]
+        color = int(row[0])
+        if color != 0 and np.all(row == color) and int(np.sum(grid == color)) == cols:
+            return "row", r
+    raise ValueError("No divider found")
