@@ -1,8 +1,9 @@
 from dataclasses import dataclass
-from typing import Callable, List, Set, Tuple
+from typing import Callable, List, Tuple
 
 import numpy as np
 
+from helper.Indications import Indication
 from helper.Observations import ProblemObservation
 from helper.Transformations import (
     boolean_combine,
@@ -43,9 +44,7 @@ def _crop_to_content(grid: Grid) -> Grid:
 CROP_THEORY = Theory("crop_to_content", _crop_to_content)
 
 
-def color_substitution_theories(
-    problem: ProblemObservation,
-) -> List[Theory]:
+def color_substitution_theories(problem: ProblemObservation) -> List[Theory]:
     first = problem.examples[0]
     all_colors = (
         {obj.color for obj in first.input_objects}
@@ -79,50 +78,43 @@ _INDICATION_MAP: dict[str, Callable[[str], bool]] = {
 }
 
 
-def _reorder(theories: List[Theory], indications: Set[str]) -> List[Theory]:
-    if not indications:
-        return theories
-    indicated = [
-        t for t in theories
-        if any(_INDICATION_MAP[ind](t.name) for ind in indications if ind in _INDICATION_MAP)
+def _score_and_sort(theories: List[Theory], indications: List[Indication]) -> List[Theory]:
+    score_map = {ind.name: ind.confidence for ind in indications}
+
+    def score(t: Theory) -> float:
+        return max(
+            (score_map[name] for name, match in _INDICATION_MAP.items()
+             if name in score_map and match(t.name)),
+            default=0.0,
+        )
+
+    return sorted(theories, key=score, reverse=True)
+
+
+def _build_all_theories(problem: ProblemObservation) -> List[Theory]:
+    theories: List[Theory] = [
+        *SYMMETRY_THEORIES,
+        CROP_THEORY,
+        *color_substitution_theories(problem),
     ]
-    rest = [t for t in theories if t not in indicated]
-    return [*indicated, *rest]
 
+    theories.append(Theory("make_hollow", make_hollow))
 
-def generate_phase1_theories(
-    problem: ProblemObservation, indications: Set[str] = frozenset()
-) -> List[Theory]:
-    all_theories = [*SYMMETRY_THEORIES, CROP_THEORY, *color_substitution_theories(problem)]
-    return _reorder(all_theories, indications)
+    first = problem.examples[0]
+    if first.output_objects:
+        out_obj = first.output_objects[0]
+        scale = out_obj.height
+        new_color = out_obj.color
+        theories.append(Theory(
+            f"grow_{scale}x_to_{new_color}",
+            lambda g, s=scale, c=new_color: grow_cells(g, s, c),
+        ))
 
-
-def generate_phase2_theories(
-    problem: ProblemObservation, indications: Set[str] = frozenset()
-) -> List[Theory]:
-    theories: List[Theory] = []
-
-    if "hollow" in indications:
-        theories.append(Theory("make_hollow", make_hollow))
-
-    if "expand" in indications:
-        first = problem.examples[0]
-        if first.output_objects:
-            out_obj = first.output_objects[0]
-            scale = out_obj.height
-            new_color = out_obj.color
-            theories.append(Theory(
-                f"grow_{scale}x_to_{new_color}",
-                lambda g, s=scale, c=new_color: grow_cells(g, s, c),
-            ))
-
-    if "divider" in indications:
-        first = problem.examples[0]
+    if first.divider_axis is not None:
         output_color = next(iter(first.colors_added), 1)
         axis = first.divider_axis
         idx = first.divider_index
 
-        # Framing: split grid at observed divider position (axis + index from observation)
         def _split(g, a=axis, i=idx):
             if a == "col":
                 return g[:, :i], g[:, i + 1:]
@@ -137,6 +129,7 @@ def generate_phase2_theories(
     return theories
 
 
-def generate_theories(problem: ProblemObservation) -> List[Theory]:
-    return [*generate_phase1_theories(problem), *generate_phase2_theories(problem)]
-
+def generate_theories(
+    problem: ProblemObservation, indications: List[Indication]
+) -> List[Theory]:
+    return _score_and_sort(_build_all_theories(problem), indications)

@@ -3,7 +3,7 @@ import numpy as np
 from ArcProblem import ArcProblem
 from helper.Indications import compute_indications
 from helper.Observations import observe_example, observe_problem
-from helper.Theories import generate_phase1_theories, generate_phase2_theories
+from helper.Theories import generate_theories
 
 
 class ArcAgent:
@@ -20,14 +20,9 @@ class ArcAgent:
         indications = compute_indications(problem)
         test_input = arc_problem.test_set().get_input_data().data()
 
-        for theory in generate_phase1_theories(problem, indications):
+        for theory in generate_theories(problem, indications):
             if theory.validate(examples):
-                print(f"{arc_problem.problem_name()}: matched theory '{theory.name}' (phase 1)")
-                return [theory.apply(test_input)]
-
-        for theory in generate_phase2_theories(problem, indications):
-            if theory.validate(examples):
-                print(f"{arc_problem.problem_name()}: matched theory '{theory.name}' (phase 2)")
+                print(f"{arc_problem.problem_name()}: matched theory '{theory.name}'")
                 return [theory.apply(test_input)]
 
         print(f"{arc_problem.problem_name()}: no theory matched")
