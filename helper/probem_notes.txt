@@ -167,3 +167,91 @@ indications
 
 others:
  - divide input
+
+
+-----------
+
+
+Compact Codex prompt version:
+
+```text
+Adapt my ARC-AGI solver architecture.
+
+Current idea:
+Examples → Observations → Weighted primitive graph → Guided search → Verification.
+
+Change it to:
+Examples → multiple parse hypotheses → human-concept observations → role hypotheses → correspondence hypotheses → weighted primitive graph → guided search → verification.
+
+Core issue:
+Do not assume one fixed object segmentation. Generate multiple scene parses: connected components, same-color groups, repeated shapes, frames/containers, lines, foreground/background. Treat “what counts as an object” as a hypothesis.
+
+Add modules:
+1. ParseHypothesis
+2. ConceptObserver
+3. CorrespondenceInference
+4. RoleInference
+5. PrimitiveGraph
+6. BeamSearch
+7. Verifier
+8. FailureFeedback
+
+Human concept observations:
+- objecthood
+- salience/uniqueness
+- spatial relations
+- containment
+- symmetry/completion
+- counting
+- input-output deltas
+- cross-example invariants
+
+Roles:
+marker, payload, container, boundary, key, template, distractor, target, source, result.
+
+Correspondence:
+Infer input-object to output-object mappings. Track preserved and changed properties:
+shape, color, size, position, bounding box, hole structure, rotation, reflection, translation, recoloring, creation, deletion.
+
+Primitive types:
+SELECTOR, RELATION, ATOMIC_TRANSFORM, INTENT_TRANSFORM, COMBINATOR, GENERATIVE.
+
+Selectors:
+all_objects, objects_by_color, largest, smallest, unique_by_color, unique_by_shape, objects_touching_border, frames, lines, holes, repeated_motifs.
+
+Relations:
+inside, adjacent, touching, same_row, same_column, aligned, between, nearest, toward, color_match, shape_match, encloses, touches_border.
+
+Atomic transforms:
+recolor, translate, rotate, reflect, remove, copy, crop, fill, extend, merge, draw_line, draw_rectangle.
+
+Intent transforms:
+complete_line, complete_rectangle, complete_symmetry, repair_pattern, fill_enclosed_region, move_into_container, move_to_matching_container, extend_until_boundary, remove_distractors, extract_repeated_motif, copy_template_to_target, recolor_by_key, draw_missing_part.
+
+Search:
+Beam search over candidate programs that include:
+- parse strategy
+- role bindings
+- correspondence model
+- primitive path
+- score
+
+Verification:
+Execute each candidate on all training examples. Exact match required.
+On failure, analyze differences:
+- shape correct but position wrong → reward movement primitives
+- position correct but color wrong → reward recoloring primitives
+- extra cells → reward filtering/removal
+- missing cells → reward completion/fill/copy
+
+Implementation phases:
+1. Data models
+2. Multiple parsers
+3. Observation engine
+4. Correspondence inference
+5. Role inference
+6. Primitive graph
+7. Beam search
+8. Verification and feedback
+
+Do not hardcode task-specific solutions. Hardcode reusable concepts and primitives only. Full rules should emerge as compositions of primitives.
