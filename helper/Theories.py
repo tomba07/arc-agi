@@ -9,10 +9,10 @@ def _make_hollow(grid: Grid) -> Grid:
     interior = np.zeros(grid.shape, dtype=bool)
     interior[1:-1, 1:-1] = (
         (grid[1:-1, 1:-1] != 0)
-        & (grid[:-2,  1:-1] != 0)
-        & (grid[2:,   1:-1] != 0)
-        & (grid[1:-1, :-2]  != 0)
-        & (grid[1:-1, 2:]   != 0)
+        & (grid[:-2, 1:-1] != 0)
+        & (grid[2:, 1:-1] != 0)
+        & (grid[1:-1, :-2] != 0)
+        & (grid[1:-1, 2:] != 0)
     )
     return np.where(interior, 0, grid)
 
@@ -21,42 +21,63 @@ def _swap_colors(grid: Grid) -> Grid:
     colors = sorted(set(np.unique(grid)) - {0})
     if len(colors) != 2:
         return grid
-    a, b = colors
-    return np.select([grid == a, grid == b], [b, a], grid).astype(grid.dtype)
+    color1, color2 = colors
+    return np.select([grid == color1, grid == color2], [color2, color1], grid)
 
 
 def _color_replace_and_erase(grid: Grid, replace_color: int) -> Grid:
-    others = sorted(set(np.unique(grid)) - {0, replace_color})
-    if len(others) != 1:
+    other_colors = sorted(set(np.unique(grid)) - {0, replace_color})
+    if len(other_colors) != 1:
         return grid
-    other = others[0]
-    return np.select([grid == replace_color, grid == other], [other, 0], grid).astype(grid.dtype)
+    other_color = other_colors[0]
+    return np.select(
+        [grid == replace_color, grid == other_color], [other_color, 0], grid
+    )
 
 
 def _crop_to_content(grid: Grid) -> Grid:
     rows, cols = np.where(grid != 0)
     if len(rows) == 0:
         return grid
-    return grid[rows.min(): rows.max() + 1, cols.min(): cols.max() + 1]
+    return grid[rows.min() : rows.max() + 1, cols.min() : cols.max() + 1]
 
 
-def _rotate_90(grid: Grid) -> Grid:  return np.rot90(grid, k=1)
-def _rotate_180(grid: Grid) -> Grid: return np.rot90(grid, k=2)
-def _rotate_270(grid: Grid) -> Grid: return np.rot90(grid, k=3)
-def _flip_lr(grid: Grid) -> Grid:    return np.fliplr(grid)
-def _flip_ud(grid: Grid) -> Grid:    return np.flipud(grid)
-def _transpose(grid: Grid) -> Grid:      return grid.T
-def _anti_transpose(grid: Grid) -> Grid: return np.rot90(grid.T)
-def _overlay_flip_ud(grid: Grid) -> Grid: return np.maximum(grid, np.flipud(grid))
+def _rotate_90(grid: Grid) -> Grid:
+    return np.rot90(grid, k=1)
 
 
-def _recolor(src: int, dst: int) -> Callable[[Grid], Grid]:
-    def fn(g: Grid) -> Grid: return np.where(g == src, dst, g).astype(g.dtype)
-    return fn
+def _rotate_180(grid: Grid) -> Grid:
+    return np.rot90(grid, k=2)
 
 
-def _erase_replacing(replace: int) -> Callable[[Grid], Grid]:
-    def fn(g: Grid) -> Grid: return _color_replace_and_erase(g, replace)
+def _rotate_270(grid: Grid) -> Grid:
+    return np.rot90(grid, k=3)
+
+
+def _flip_lr(grid: Grid) -> Grid:
+    return np.fliplr(grid)
+
+
+def _flip_ud(grid: Grid) -> Grid:
+    return np.flipud(grid)
+
+
+def _transpose(grid: Grid) -> Grid:
+    return grid.T
+
+
+def _anti_transpose(grid: Grid) -> Grid:
+    return np.rot90(grid.T)
+
+
+def _overlay_flip_ud(grid: Grid) -> Grid:
+    return np.maximum(grid, np.flipud(grid))
+
+
+def _recolor(from_color: int, to_color: int) -> Callable[[Grid], Grid]:
+    def fn(grid: Grid) -> Grid:
+        return np.where(grid == from_color, to_color, grid)
+
     return fn
 
 
@@ -74,9 +95,9 @@ def generate_theories() -> List[Callable[[Grid], Grid]]:
         _overlay_flip_ud,
         _swap_colors,
     ]
-    for a in range(1, 10):
-        for b in range(0, 10):
-            if a != b:
-                transforms.append(_recolor(a, b))
-        transforms.append(_erase_replacing(a))
+    for from_color in range(1, 10):
+        for to_color in range(0, 10):
+            if from_color != to_color:
+                transforms.append(_recolor(from_color, to_color))
+        transforms.append(lambda grid, a=from_color: _color_replace_and_erase(grid, a))
     return transforms
