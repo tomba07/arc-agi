@@ -1,5 +1,6 @@
 from typing import Callable, List
 from dataclasses import dataclass
+from functools import lru_cache
 
 import numpy as np
 
@@ -50,12 +51,16 @@ def _swap_colors(grid: Grid) -> Grid:
     return np.select([grid == color1, grid == color2], [color2, color1], grid)
 
 
-def _collect_cells(grid: Grid, start_row: int, start_col: int, visited: set) -> frozenset[tuple[int, int]]:
+def _collect_cells(
+    grid: Grid, start_row: int, start_col: int, visited: set
+) -> frozenset[tuple[int, int]]:
     cells: set[tuple[int, int]] = set()
     queue = [(start_row, start_col)]
     while queue:
         row, col = queue.pop(0)
-        if (row, col) in visited or not (0 <= row < grid.shape[0] and 0 <= col < grid.shape[1]):
+        if (row, col) in visited or not (
+            0 <= row < grid.shape[0] and 0 <= col < grid.shape[1]
+        ):
             continue
         if grid[row, col] == 0:
             continue
@@ -79,7 +84,9 @@ def _make_arc_object(cells: frozenset[tuple[int, int]]) -> ArcObject:
     )
 
 
-def _get_objects(grid: Grid) -> list[ArcObject]:
+@lru_cache(maxsize=None)
+def _get_objects_cached(grid_bytes: bytes, shape: tuple) -> tuple[ArcObject, ...]:
+    grid = np.frombuffer(grid_bytes).reshape(shape)
     visited: set[tuple[int, int]] = set()
     objects = []
 
@@ -90,7 +97,11 @@ def _get_objects(grid: Grid) -> list[ArcObject]:
             cells = _collect_cells(grid, start_row, start_col, visited)
             objects.append(_make_arc_object(cells))
 
-    return objects
+    return tuple(objects)
+
+
+def _get_objects(grid: Grid) -> tuple[ArcObject, ...]:
+    return _get_objects_cached(grid.tobytes(), grid.shape)
 
 
 def _crop_to_content(grid: Grid) -> Grid:
