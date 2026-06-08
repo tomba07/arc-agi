@@ -1,10 +1,20 @@
 from typing import Callable, List
+from dataclasses import dataclass
 
 import numpy as np
 
 from ArcProblem import ArcProblem
 
 Grid = np.ndarray
+
+
+@dataclass
+class ArcObject:
+    row: int
+    col: int
+    width: int
+    height: int
+    cells: frozenset[tuple[int, int]]
 
 
 def _rotate_90(grid: Grid) -> Grid:
@@ -19,12 +29,8 @@ def _rotate_270(grid: Grid) -> Grid:
     return np.rot90(grid, k=3)
 
 
-def _flip_lr(grid: Grid) -> Grid:
-    return np.fliplr(grid)
-
-
-def _flip_ud(grid: Grid) -> Grid:
-    return np.flipud(grid)
+def _mirror_horizontally(grid: Grid) -> Grid:
+    return np.maximum(grid, np.flipud(grid))
 
 
 def _recolor(from_color: int, to_color: int) -> Callable[[Grid], Grid]:
@@ -36,39 +42,80 @@ def _recolor(from_color: int, to_color: int) -> Callable[[Grid], Grid]:
 
 def _swap_colors(grid: Grid) -> Grid:
     colors = sorted(set(np.unique(grid)) - {0})
+
     if len(colors) != 2:
         return grid
     color1, color2 = colors
+
     return np.select([grid == color1, grid == color2], [color2, color1], grid)
 
 
+def _collect_cells(grid: Grid, start_row: int, start_col: int, visited: set) -> frozenset[tuple[int, int]]:
+    cells: set[tuple[int, int]] = set()
+    queue = [(start_row, start_col)]
+    while queue:
+        row, col = queue.pop(0)
+        if (row, col) in visited or not (0 <= row < grid.shape[0] and 0 <= col < grid.shape[1]):
+            continue
+        if grid[row, col] == 0:
+            continue
+        visited.add((row, col))
+        cells.add((row, col))
+        queue.extend([(row - 1, col), (row + 1, col), (row, col - 1), (row, col + 1)])
+    return frozenset(cells)
+
+
+def _make_arc_object(cells: frozenset[tuple[int, int]]) -> ArcObject:
+    min_row = min(row for row, col in cells)
+    max_row = max(row for row, col in cells)
+    min_col = min(col for row, col in cells)
+    max_col = max(col for row, col in cells)
+    return ArcObject(
+        row=min_row,
+        col=min_col,
+        width=max_col - min_col + 1,
+        height=max_row - min_row + 1,
+        cells=cells,
+    )
+
+
+def _get_objects(grid: Grid) -> list[ArcObject]:
+    visited: set[tuple[int, int]] = set()
+    objects = []
+
+    for start_row in range(grid.shape[0]):
+        for start_col in range(grid.shape[1]):
+            if grid[start_row, start_col] == 0 or (start_row, start_col) in visited:
+                continue
+            cells = _collect_cells(grid, start_row, start_col, visited)
+            objects.append(_make_arc_object(cells))
+
+    return objects
+
+
 def _crop_to_content(grid: Grid) -> Grid:
-    min_row, max_row = grid.shape[0], 0
-    min_col, max_col = grid.shape[1], 0
-    for row in range(grid.shape[0]):
-        for col in range(grid.shape[1]):
-            if grid[row, col] != 0:
-                min_row = min(min_row, row)
-                max_row = max(max_row, row)
-                min_col = min(min_col, col)
-                max_col = max(max_col, col)
-    if max_row < min_row:
+    objects = _get_objects(grid)
+
+    if not objects:
         return grid
+
+    min_row = min(obj.row for obj in objects)
+    max_row = max(obj.row + obj.height - 1 for obj in objects)
+    min_col = min(obj.col for obj in objects)
+    max_col = max(obj.col + obj.width - 1 for obj in objects)
+
     return grid[min_row : max_row + 1, min_col : max_col + 1]
 
 
 def _make_hollow(grid: Grid) -> Grid:
+    all_cells = set(cell for obj in _get_objects(grid) for cell in obj.cells)
     result = grid.copy()
-    for row in range(1, grid.shape[0] - 1):
-        for col in range(1, grid.shape[1] - 1):
-            if (
-                grid[row, col] != 0
-                and grid[row - 1, col] != 0
-                and grid[row + 1, col] != 0
-                and grid[row, col - 1] != 0
-                and grid[row, col + 1] != 0
-            ):
-                result[row, col] = 0
+
+    for row, col in all_cells:
+        neighbors = [(row - 1, col), (row + 1, col), (row, col - 1), (row, col + 1)]
+        if all(n in all_cells for n in neighbors):
+            result[row, col] = 0
+
     return result
 
 
@@ -81,9 +128,8 @@ class ArcAgent:
             _rotate_90,
             _rotate_180,
             _rotate_270,
-            _flip_lr,
-            _flip_ud,
             _swap_colors,
+            _mirror_horizontally,
             _crop_to_content,
             _make_hollow,
         ]
@@ -103,6 +149,7 @@ class ArcAgent:
         for theory in theories:
             if self._validate_theory(theory, examples):
                 return theory(test_input)
+
         return None
 
     def _validate_composed_theories(self, theories, examples, test_input):
@@ -116,6 +163,7 @@ class ArcAgent:
                         return level2(level1(test_input))
                 except Exception:
                     continue
+
         return None
 
     def make_predictions(self, arc_problem: ArcProblem) -> list[np.ndarray]:
@@ -133,7 +181,9 @@ class ArcAgent:
 
         if result is not None:
             print(f"{arc_problem.problem_name()}: matched")
+
             return [result]
 
         print(f"{arc_problem.problem_name()}: no match")
+
         return []
