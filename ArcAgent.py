@@ -27,18 +27,6 @@ def _flip_ud(grid: Grid) -> Grid:
     return np.flipud(grid)
 
 
-def _transpose(grid: Grid) -> Grid:
-    return grid.T
-
-
-def _anti_transpose(grid: Grid) -> Grid:
-    return np.rot90(grid.T)
-
-
-def _overlay_flip_ud(grid: Grid) -> Grid:
-    return np.maximum(grid, np.flipud(grid))
-
-
 def _recolor(from_color: int, to_color: int) -> Callable[[Grid], Grid]:
     def fn(grid: Grid) -> Grid:
         return np.where(grid == from_color, to_color, grid)
@@ -54,33 +42,34 @@ def _swap_colors(grid: Grid) -> Grid:
     return np.select([grid == color1, grid == color2], [color2, color1], grid)
 
 
-def _color_replace_and_erase(grid: Grid, replace_color: int) -> Grid:
-    other_colors = sorted(set(np.unique(grid)) - {0, replace_color})
-    if len(other_colors) != 1:
-        return grid
-    other_color = other_colors[0]
-    return np.select(
-        [grid == replace_color, grid == other_color], [other_color, 0], grid
-    )
-
-
 def _crop_to_content(grid: Grid) -> Grid:
-    rows, cols = np.where(grid != 0)
-    if len(rows) == 0:
+    min_row, max_row = grid.shape[0], 0
+    min_col, max_col = grid.shape[1], 0
+    for row in range(grid.shape[0]):
+        for col in range(grid.shape[1]):
+            if grid[row, col] != 0:
+                min_row = min(min_row, row)
+                max_row = max(max_row, row)
+                min_col = min(min_col, col)
+                max_col = max(max_col, col)
+    if max_row < min_row:
         return grid
-    return grid[rows.min() : rows.max() + 1, cols.min() : cols.max() + 1]
+    return grid[min_row : max_row + 1, min_col : max_col + 1]
 
 
 def _make_hollow(grid: Grid) -> Grid:
-    interior = np.zeros(grid.shape, dtype=bool)
-    interior[1:-1, 1:-1] = (
-        (grid[1:-1, 1:-1] != 0)
-        & (grid[:-2, 1:-1] != 0)
-        & (grid[2:, 1:-1] != 0)
-        & (grid[1:-1, :-2] != 0)
-        & (grid[1:-1, 2:] != 0)
-    )
-    return np.where(interior, 0, grid)
+    result = grid.copy()
+    for row in range(1, grid.shape[0] - 1):
+        for col in range(1, grid.shape[1] - 1):
+            if (
+                grid[row, col] != 0
+                and grid[row - 1, col] != 0
+                and grid[row + 1, col] != 0
+                and grid[row, col - 1] != 0
+                and grid[row, col + 1] != 0
+            ):
+                result[row, col] = 0
+    return result
 
 
 class ArcAgent:
@@ -94,9 +83,6 @@ class ArcAgent:
             _rotate_270,
             _flip_lr,
             _flip_ud,
-            _transpose,
-            _anti_transpose,
-            _overlay_flip_ud,
             _swap_colors,
             _crop_to_content,
             _make_hollow,
@@ -105,7 +91,6 @@ class ArcAgent:
             for to_color in range(0, 10):
                 if from_color != to_color:
                     transforms.append(_recolor(from_color, to_color))
-            transforms.append(lambda grid, a=from_color: _color_replace_and_erase(grid, a))
         return transforms
 
     def _validate_theory(self, fn, examples):
