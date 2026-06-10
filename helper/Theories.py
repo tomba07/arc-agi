@@ -151,13 +151,15 @@ def search_compositions(
     theories: List[Theory],
     examples: List[Tuple[Grid, Grid]],
     max_depth: int = 2,
-) -> Generator[Tuple[str, Callable[[Grid], Grid]], None, None]:
+) -> Generator[Tuple[str, Callable[[Grid], Grid], int], None, None]:
     def validates(fn: Callable[[Grid], Grid]) -> bool:
         return all(np.array_equal(fn(inp), out) for inp, out in examples)
 
+    tried = 0
     for t in sorted(theories, key=lambda t: t.weight, reverse=True):
+        tried += 1
         if validates(t.apply):
-            yield t.name, t.apply
+            yield t.name, t.apply, tried
 
     if max_depth < 2:
         return
@@ -168,6 +170,7 @@ def search_compositions(
         reverse=True,
     )
     for t1, t2 in pairs:
+        tried += 1
         composed = lambda g, a=t1.apply, b=t2.apply: b(a(g))
         if validates(composed):
-            yield f"{t1.name}+{t2.name}", composed
+            yield f"{t1.name}+{t2.name}", composed, tried

@@ -19,8 +19,8 @@ class ArcAgent:
         test_input = arc_problem.test_set().get_input_data().data()
 
         theories = generate_candidates(problem, examples)
-        for name, apply_fn in search_compositions(theories, examples, max_depth=2):
-            print(f"{arc_problem.problem_name()}: matched '{name}'")
+        for name, apply_fn, tried in search_compositions(theories, examples, max_depth=2):
+            print(f"{arc_problem.problem_name()}: matched '{name}' (tried {tried})")
             return [apply_fn(test_input)]
 
         print(f"{arc_problem.problem_name()}: no theory matched")
