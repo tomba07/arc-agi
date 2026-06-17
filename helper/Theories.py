@@ -25,6 +25,7 @@ Grid = np.ndarray
 class Theory:
     name: str
     weight: float
+    prior: float
     apply: Callable[[Grid], Grid]
 
 
@@ -117,6 +118,28 @@ PRIMITIVES: List[Primitive] = [
 ]
 
 
+def observation_prior(name: str, problem: ProblemObservation) -> float:
+    no_color_change = not problem.colors_removed and not problem.colors_added
+
+    if problem.has_divider and "divider_" in name:
+        return 3.0
+    if problem.all_single_cells and ("ray_fill" in name or name.startswith("scale_")):
+        return 2.0
+    if problem.same_grid_size and no_color_change and any(
+        name.startswith(p) for p in ("rotate_", "flip_", "transpose", "anti_transpose", "overlay_flip_ud")
+    ):
+        return 2.0
+    if problem.all_filled_rectangles and problem.same_grid_size and name == "original_minus_erode":
+        return 2.0
+    if problem.same_object_count and problem.colors_removed and (
+        name.startswith("color_map") or name.startswith("remap_replace")
+    ):
+        return 2.0
+    if problem.all_single_cells and problem.same_grid_size and name == "draw_clockwise_spiral":
+        return 1.5
+    return 1.0
+
+
 def generate_candidates(
     problem: ProblemObservation,
     examples: List[Tuple[Grid, Grid]],
@@ -127,12 +150,14 @@ def generate_candidates(
     for prim in PRIMITIVES:
         for name, apply_fn in prim.instantiate(problem, examples):
             score = soft_match_score(apply_fn, examples)
-            theories.append(Theory(name, score, apply_fn))
+            prior = observation_prior(name, problem)
+            theories.append(Theory(name, score, prior, apply_fn))
             base.append((name, apply_fn))
 
     for name, apply_fn in derive_object_theories(examples):
         score = soft_match_score(apply_fn, examples)
-        theories.append(Theory(name, score, apply_fn))
+        prior = observation_prior(name, problem)
+        theories.append(Theory(name, score, prior, apply_fn))
         base.append((name, apply_fn))
 
     for name, fn in base:
@@ -142,7 +167,8 @@ def generate_candidates(
                 return g
             return mask_subtract(g, transformed)
         score = soft_match_score(_residual, examples)
-        theories.append(Theory(f"original_minus_{name}", score, _residual))
+        prior = observation_prior(f"original_minus_{name}", problem)
+        theories.append(Theory(f"original_minus_{name}", score, prior, _residual))
 
     return theories
 
@@ -156,7 +182,7 @@ def search_compositions(
         return all(np.array_equal(fn(inp), out) for inp, out in examples)
 
     tried = 0
-    for t in sorted(theories, key=lambda t: t.weight, reverse=True):
+    for t in sorted(theories, key=lambda t: t.weight * t.prior, reverse=True):
         tried += 1
         if validates(t.apply):
             yield t.name, t.apply, tried
@@ -166,7 +192,7 @@ def search_compositions(
 
     pairs = sorted(
         [(t1, t2) for t1 in theories for t2 in theories],
-        key=lambda p: p[0].weight + p[1].weight,
+        key=lambda p: p[0].weight * p[0].prior + p[1].weight * p[1].prior,
         reverse=True,
     )
     for t1, t2 in pairs:
