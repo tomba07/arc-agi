@@ -1,7 +1,7 @@
 import numpy as np
 
 from ArcProblem import ArcProblem
-from Transformations import Theory, apply_theory
+from Transformations import Theory
 from Observations import observe
 from Theories import get_theories
 
@@ -18,11 +18,19 @@ class ArcAgent:
             for example in arc_problem.training_set()
         ]
 
-    def _validate_theory(self, theory: Theory, examples) -> bool:
+    def _apply(self, theory: Theory, grid: np.ndarray, obs) -> np.ndarray:
+        for fn in theory:
+            grid = fn(grid, obs)
+        return grid
+
+    def _validate_theory(self, theory: Theory, obs) -> bool:
         try:
-            return all(
-                np.array_equal(apply_theory(theory, inp), out) for inp, out in examples
-            )
+            for ex in obs.examples:
+                obs.shapes = ex.input_shapes
+                result = self._apply(theory, ex.input, obs)
+                if not np.array_equal(result, ex.output):
+                    return False
+            return True
         except Exception:
             return False
 
@@ -30,12 +38,13 @@ class ArcAgent:
         examples = self._extract_simplified_examples(arc_problem)
         test_input = arc_problem.test_set().get_input_data().data()
 
-        obs = observe(examples)
+        obs = observe(examples, test_input)
 
         for theory in get_theories(obs):
-            if self._validate_theory(theory, examples):
+            if self._validate_theory(theory, obs):
                 print(f"{arc_problem.problem_name()}: matched")
-                return [apply_theory(theory, test_input)]
+                obs.shapes = obs.test.shapes
+                return [self._apply(theory, obs.test.input, obs)]
 
         print(f"{arc_problem.problem_name()}: no match")
         return []
