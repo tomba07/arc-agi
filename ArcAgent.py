@@ -1,4 +1,4 @@
-from typing import Callable, List
+from typing import Callable, List, Optional
 from dataclasses import dataclass
 from functools import lru_cache
 
@@ -7,6 +7,74 @@ import numpy as np
 from ArcProblem import ArcProblem
 
 Grid = np.ndarray
+Theory = list[Callable[[Grid], Grid]]
+
+
+def _apply_theory(theory: Theory, grid: Grid) -> Grid:
+    for fn in theory:
+        grid = fn(grid)
+    return grid
+
+
+@dataclass
+class Observations:
+    same_size: bool
+    size_decreases: bool
+    same_color_set: bool
+    recolor_pairs: list[tuple[int, int]]
+    color_map: Optional[
+        dict
+    ]
+
+
+def _detect_color_map(examples: list) -> Optional[dict]:
+    """Derive a consistent cell-level color mapping from input to output."""
+    mapping: dict = {}
+    for inp, out in examples:
+        if inp.shape != out.shape:
+            return None
+        for vi, vo in zip(inp.flat, out.flat):
+            vi, vo = int(vi), int(vo)
+            if vi in mapping:
+                if mapping[vi] != vo:
+                    return None
+            else:
+                mapping[vi] = vo
+
+    if not mapping or all(k == v for k, v in mapping.items()):
+        return None
+    return mapping
+
+
+def _observe(examples: list) -> Observations:
+    same_size = all(inp.shape == out.shape for inp, out in examples)
+    size_decreases = any(inp.size > out.size for inp, out in examples)
+
+    source_colors: set[int] = set()
+    target_colors: set[int] = set()
+    for inp, out in examples:
+        in_colors = set(int(c) for c in np.unique(inp) if c != 0)
+        out_colors = set(int(c) for c in np.unique(out) if c != 0)
+        source_colors |= in_colors - out_colors
+        target_colors |= out_colors - in_colors
+
+    same_color_set = not source_colors and not target_colors
+
+    recolor_pairs: list[tuple[int, int]] = []
+    for fc in source_colors:
+        if target_colors:
+            for tc in target_colors:
+                recolor_pairs.append((fc, tc))
+        else:
+            recolor_pairs.append((fc, 0))
+
+    return Observations(
+        same_size=same_size,
+        size_decreases=size_decreases,
+        same_color_set=same_color_set,
+        recolor_pairs=recolor_pairs,
+        color_map=_detect_color_map(examples),
+    )
 
 
 @dataclass
@@ -37,6 +105,16 @@ def _mirror_horizontally(grid: Grid) -> Grid:
 def _recolor(from_color: int, to_color: int) -> Callable[[Grid], Grid]:
     def fn(grid: Grid) -> Grid:
         return np.where(grid == from_color, to_color, grid)
+
+    return fn
+
+
+def _make_color_map_fn(mapping: dict) -> Callable[[Grid], Grid]:
+    def fn(grid: Grid) -> Grid:
+        result = np.zeros_like(grid)
+        for k, v in mapping.items():
+            result[grid == k] = v
+        return result
 
     return fn
 
@@ -130,52 +208,51 @@ def _make_hollow(grid: Grid) -> Grid:
     return result
 
 
+_SAME_SIZE_THEORIES: list[Theory] = [
+    [_rotate_90],
+    [_rotate_180],
+    [_rotate_270],
+    [_mirror_horizontally],
+    [_swap_colors],
+    [_make_hollow],
+]
+
+_SIZE_REDUCING_THEORIES: list[Theory] = [
+    [_crop_to_content],
+    [_crop_to_content, _swap_colors],
+]
+
+
 class ArcAgent:
     def __init__(self):
         pass
 
-    def _generate_theories(self) -> List[Callable[[Grid], Grid]]:
-        transforms: List[Callable[[Grid], Grid]] = [
-            _rotate_90,
-            _rotate_180,
-            _rotate_270,
-            _swap_colors,
-            _mirror_horizontally,
-            _crop_to_content,
-            _make_hollow,
-        ]
-        for from_color in range(1, 10):
-            for to_color in range(0, 10):
-                if from_color != to_color:
-                    transforms.append(_recolor(from_color, to_color))
-        return transforms
+    def _get_theories(self, obs: Observations) -> list[Theory]:
+        theories: list[Theory] = []
 
-    def _validate_theory(self, fn, examples):
+        if obs.same_size:
+            theories.extend(_SAME_SIZE_THEORIES)
+
+        if obs.size_decreases:
+            theories.extend(_SIZE_REDUCING_THEORIES)
+
+        if obs.color_map:
+            theories.append([_make_color_map_fn(obs.color_map)])
+
+        for fc, tc in obs.recolor_pairs:
+            theories.append([_recolor(fc, tc)])
+            if obs.same_size:
+                theories.append([_swap_colors, _recolor(fc, tc)])
+
+        return theories
+
+    def _validate_theory(self, theory: Theory, examples) -> bool:
         try:
-            return all(np.array_equal(fn(inp), out) for inp, out in examples)
+            return all(
+                np.array_equal(_apply_theory(theory, inp), out) for inp, out in examples
+            )
         except Exception:
             return False
-
-    def _validate_theories(self, theories, examples, test_input):
-        for theory in theories:
-            if self._validate_theory(theory, examples):
-                return theory(test_input)
-
-        return None
-
-    def _validate_composed_theories(self, theories, examples, test_input):
-        for level1 in theories:
-            for level2 in theories:
-                try:
-                    if all(
-                        np.array_equal(level2(level1(inp)), out)
-                        for inp, out in examples
-                    ):
-                        return level2(level1(test_input))
-                except Exception:
-                    continue
-
-        return None
 
     def make_predictions(self, arc_problem: ArcProblem) -> list[np.ndarray]:
         examples = [
@@ -184,17 +261,12 @@ class ArcAgent:
         ]
         test_input = arc_problem.test_set().get_input_data().data()
 
-        theories = self._generate_theories()
+        obs = _observe(examples)
 
-        result = self._validate_theories(theories, examples, test_input)
-        if result is None:
-            result = self._validate_composed_theories(theories, examples, test_input)
-
-        if result is not None:
-            print(f"{arc_problem.problem_name()}: matched")
-
-            return [result]
+        for theory in self._get_theories(obs):
+            if self._validate_theory(theory, examples):
+                print(f"{arc_problem.problem_name()}: matched")
+                return [_apply_theory(theory, test_input)]
 
         print(f"{arc_problem.problem_name()}: no match")
-
         return []
