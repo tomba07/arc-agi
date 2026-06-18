@@ -33,6 +33,7 @@ def mirror_horizontally(grid: Grid, shapes: list[Shape]) -> Grid:
 def recolor(from_color: int, to_color: int) -> Callable[[Grid, list[Shape]], Grid]:
     def fn(grid: Grid, shapes: list[Shape]) -> Grid:
         return np.where(grid == from_color, to_color, grid)
+
     return fn
 
 
@@ -62,3 +63,39 @@ def make_hollow(grid: Grid, shapes: list[Shape]) -> Grid:
         if all(n in all_cells for n in neighbors):
             result[row, col] = 0
     return result
+
+
+def generate_spiral(color: int) -> Callable[[Grid, list[Shape]], Grid]:
+    def fn(grid: Grid, shapes: list[Shape]) -> Grid:
+        grid = grid.copy()
+        grid.fill(color)
+        max_row, max_col = grid.shape
+        top, bottom, left, right = 1, max_row - 2, 0, max_col - 2
+
+        while top <= bottom and left <= right:
+            # Draw black path from left to right
+            for c in range(left, right + 1):
+                grid[top][c] = 0
+
+            # Draw black path downward
+            for r in range(top, bottom + 1):
+                grid[r][right] = 0
+
+            # Draw black path from right to left
+            if top < bottom:
+                for c in range(right, left, -1):
+                    grid[bottom][c] = 0
+
+            # Draw black path upward
+            if left < right:
+                for r in range(bottom, top + 1, -1):
+                    grid[r][left + 1] = 0
+
+            top += 2
+            bottom -= 2
+            left += 2
+            right -= 2
+
+        return grid
+
+    return fn

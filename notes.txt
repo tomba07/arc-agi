@@ -1,10 +1,10 @@
 1cf80156: crop
   - obs: single shape, grid size change
-  - theory: crop
+  - theory: crop(single_shape)
 
 28e73c20: spiral
-  - obs: input_empty
-  - theory: spiral
+  - obs: input_empty, single_output_color
+  - theory: spiral(output_color)
 
 0520fde7: h-divider+AND
  - obs: h-divider,

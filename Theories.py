@@ -1,5 +1,6 @@
 from Transformations import (
     Theory,
+    generate_spiral,
     rotate_90, rotate_180, rotate_270,
     mirror_horizontally, swap_colors, make_hollow,
     crop_to_content, recolor,
@@ -34,6 +35,9 @@ def get_theories(obs: Observations) -> list[Theory]:
     
     if obs.single_shape_everywhere:
         theories.append([crop_to_content])
+        
+    if obs.all_inputs_empty and obs.single_output_color is not None:
+        theories.append([generate_spiral(obs.single_output_color)])
 
     if obs.grid_size_stays_identical:
         theories.extend(SAME_SIZE_THEORIES)
