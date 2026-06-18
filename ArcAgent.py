@@ -1,9 +1,9 @@
 import numpy as np
 
 from ArcProblem import ArcProblem
-from Transformations import Theory
+from Transformations import Program, ApplyState
 from Observations import observe
-from Theories import get_theories
+from Theories import synthesize
 
 
 class ArcAgent:
@@ -18,33 +18,26 @@ class ArcAgent:
             for example in arc_problem.training_set()
         ]
 
-    def _apply(self, theory: Theory, grid: np.ndarray, obs) -> np.ndarray:
-        for fn in theory:
-            grid = fn(grid, obs)
-        return grid
-
-    def _validate_theory(self, theory: Theory, obs) -> bool:
-        try:
-            for ex in obs.examples:
-                obs.shapes = ex.input_shapes
-                result = self._apply(theory, ex.input, obs)
-                if not np.array_equal(result, ex.output):
-                    return False
-            return True
-        except Exception:
-            return False
+    def _apply(self, program: Program, source_grid: np.ndarray, source_shapes) -> np.ndarray:
+        state = ApplyState(
+            grid=source_grid.copy(),
+            source_grid=source_grid,
+            source_shapes=source_shapes,
+        )
+        for step in program:
+            state = step(state)
+        return state.grid
 
     def make_predictions(self, arc_problem: ArcProblem) -> list[np.ndarray]:
         examples = self._extract_simplified_examples(arc_problem)
         test_input = arc_problem.test_set().get_input_data().data()
 
         obs = observe(examples, test_input)
+        programs = synthesize(obs)
 
-        for theory in get_theories(obs):
-            if self._validate_theory(theory, obs):
-                print(f"{arc_problem.problem_name()}: matched")
-                obs.shapes = obs.test.shapes
-                return [self._apply(theory, obs.test.input, obs)]
+        if programs:
+            print(f"{arc_problem.problem_name()}: matched")
+            return [self._apply(programs[0], obs.test.input, obs.test.shapes)]
 
         print(f"{arc_problem.problem_name()}: no match")
         return []

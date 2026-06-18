@@ -91,7 +91,6 @@ class Observations:
     size_decreases: bool
     recolor_pairs: list[tuple[int, int]]
     color_map: Optional[dict]
-    shapes: tuple[Shape, ...] = ()  # active shapes, set by ArcAgent before each apply
 
 
 def _detect_color_map(examples: list[ExampleObservation]) -> Optional[dict]:

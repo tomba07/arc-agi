@@ -1,42 +1,41 @@
+import itertools
+
+import numpy as np
+
 from Transformations import (
-    Theory,
-    rotate_90, rotate_180, rotate_270,
-    mirror_horizontally, swap_colors, make_hollow,
-    crop_to_content, recolor, make_color_map_fn,
+    Primitive, Program, ApplyState, BASE_PRIMITIVES,
+    make_recolor, make_apply_color_map,
 )
-from Observations import Observations
+from Observations import Observations, ExampleObservation
 
 
-SAME_SIZE_THEORIES: list[Theory] = [
-    [rotate_90],
-    [rotate_180],
-    [rotate_270],
-    [mirror_horizontally],
-    [swap_colors],
-    [make_hollow],
-]
-
-SIZE_REDUCING_THEORIES: list[Theory] = [
-    [crop_to_content],
-    [crop_to_content, swap_colors],
-]
-
-
-def get_theories(obs: Observations) -> list[Theory]:
-    theories: list[Theory] = []
-
-    if obs.same_size:
-        theories.extend(SAME_SIZE_THEORIES)
-
-    if obs.size_decreases:
-        theories.extend(SIZE_REDUCING_THEORIES)
-
-    if obs.color_map:
-        theories.append([make_color_map_fn(obs.color_map)])
-
+def synthesize(obs: Observations) -> list[Program]:
+    candidates: list[Primitive] = list(BASE_PRIMITIVES)
     for fc, tc in obs.recolor_pairs:
-        theories.append([recolor(fc, tc)])
-        if obs.same_size:
-            theories.append([swap_colors, recolor(fc, tc)])
+        candidates.append(make_recolor(fc, tc))
+    if obs.color_map:
+        candidates.append(make_apply_color_map(obs.color_map))
 
-    return theories
+    for length in range(1, 5):
+        for combo in itertools.product(candidates, repeat=length):
+            prog = list(combo)
+            if _validates(prog, obs.examples):
+                return [prog]
+    return []
+
+
+def _validates(prog: Program, examples: list[ExampleObservation]) -> bool:
+    for ex in examples:
+        state = ApplyState(
+            grid=ex.input.copy(),
+            source_grid=ex.input,
+            source_shapes=ex.input_shapes,
+        )
+        try:
+            for step in prog:
+                state = step(state)
+        except Exception:
+            return False
+        if not np.array_equal(state.grid, ex.output):
+            return False
+    return True
