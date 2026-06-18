@@ -27,6 +27,8 @@ def run_training_data(agent: ArcAgent, arc_problems: list[ArcProblem]) -> dict[A
         # # store the problem_set and whether it was correctly solved
         train_ans_dict[trn_problem] = (correct, preds)
 
+    total_matches = sum(1 for correct, _ in train_ans_dict.values() if correct)
+    print(f"Total matches: {total_matches}/{len(arc_problems)}")
     return train_ans_dict
 
 def load_arc_problems(path: str, problem_data: list[str]) -> list[ArcProblem]:
