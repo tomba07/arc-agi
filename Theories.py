@@ -18,7 +18,6 @@ SAME_SIZE_THEORIES: list[Theory] = [
 ]
 
 SIZE_REDUCING_THEORIES: list[Theory] = [
-    [crop_to_content],
     [crop_to_content, swap_colors],
 ]
 
@@ -32,6 +31,9 @@ RECOLOR_THEORIES: list[Theory] = [
 
 def get_theories(obs: Observations) -> list[Theory]:
     theories: list[Theory] = []
+    
+    if obs.single_shape_everywhere:
+        theories.append([crop_to_content])
 
     if obs.grid_size_stays_identical:
         theories.extend(SAME_SIZE_THEORIES)

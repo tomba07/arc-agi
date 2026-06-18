@@ -14,6 +14,21 @@ class Shape:
     cells: frozenset[tuple[int, int]]
 
 
+@dataclass
+class ExampleObservations:
+    input_shapes: list[Shape]
+    output_shapes: list[Shape]
+
+
+@dataclass
+class Observations:
+    grid_size_stays_identical: bool
+    grid_size_decreases: bool
+    single_shape_everywhere: bool
+    example_observations: list[ExampleObservations] = None
+    test_observations: ExampleObservations = None
+
+
 def _collect_cells(
     grid: Grid, start_row: int, start_col: int, visited: set
 ) -> frozenset[tuple[int, int]]:
@@ -59,20 +74,6 @@ def get_shapes(grid: Grid) -> list[Shape]:
     return shapes
 
 
-@dataclass
-class ExampleObservations:
-    input_shapes: list[Shape]
-    output_shapes: list[Shape]
-
-
-@dataclass
-class Observations:
-    grid_size_stays_identical: bool
-    grid_size_decreases: bool
-    example_observations: list[ExampleObservations] = None
-    test_observations: ExampleObservations = None
-
-
 def observe(examples: list) -> Observations:
     example_observations = []
 
@@ -91,6 +92,10 @@ def observe(examples: list) -> Observations:
         ),
         grid_size_decreases=any(
             input_grid.size > output_grid.size for input_grid, output_grid in examples
+        ),
+        single_shape_everywhere=all(
+            len(obs.input_shapes) == 1 and len(obs.output_shapes) == 1
+            for obs in example_observations
         ),
         example_observations=example_observations,
     )
