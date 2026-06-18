@@ -23,20 +23,20 @@ SIZE_REDUCING_THEORIES: list[Theory] = [
 ]
 
 RECOLOR_THEORIES: list[Theory] = [
-    [recolor(fc, tc)]
-    for fc in ARC_COLORS
-    for tc in ARC_COLORS
-    if fc != tc
+    [recolor(from_color, to_color)]
+    for from_color in ARC_COLORS
+    for to_color in ARC_COLORS
+    if from_color != to_color
 ]
 
 
 def get_theories(obs: Observations) -> list[Theory]:
     theories: list[Theory] = []
 
-    if obs.same_size:
+    if obs.grid_size_stays_identical:
         theories.extend(SAME_SIZE_THEORIES)
 
-    if obs.size_decreases:
+    if obs.grid_size_decreases:
         theories.extend(SIZE_REDUCING_THEORIES)
 
     theories.extend(RECOLOR_THEORIES)
