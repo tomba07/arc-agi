@@ -82,7 +82,7 @@ def generate_spiral(color: int) -> Callable[[Grid, list[Shape]], Grid]:
                 grid[r][right] = 0
 
             # Draw black path from right to left
-            if top < bottom:
+            if top < bottom - 1:
                 for c in range(right, left, -1):
                     grid[bottom][c] = 0
 
