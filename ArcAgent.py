@@ -32,6 +32,9 @@ class ArcAgent:
         test_input = arc_problem.test_set().get_input_data().data()
 
         obs = observe(examples, test_input)
+        
+        # if arc_problem._id == "5c0a986e":
+        #     breakpoint()
 
         for theory in get_theories(obs):
             if self._validate_theory(theory, examples, obs):

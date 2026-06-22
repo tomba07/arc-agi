@@ -20,6 +20,7 @@ class Shape:
     cells: set[tuple[int, int]]
     is_square_abstraction: bool = False
     color: int = None
+    is_two_by_two: bool = False
 
 
 @dataclass
@@ -33,6 +34,8 @@ class ExampleObservations:
     output_grid: Grid = None
     input_square_abstraction: Shape = None
     input_square_abstraction_color: int = None
+    input_only_two_by_twos: bool = False
+    two_by_two_uni_ray_direction_by_color: dict[int, str] = None
 
 
 @dataclass
@@ -45,6 +48,8 @@ class Observations:
     example_observations: list[ExampleObservations] = None
     test_observations: ExampleObservations = None
     input_square_abstraction_everywhere: bool = False
+    all_inputs_only_two_by_twos: bool = False
+    consistent_two_by_two_uni_ray_direction_by_color: dict[int, str] = None
 
 
 def _collect_cells(
@@ -73,13 +78,16 @@ def _make_shape(cells: set[tuple[int, int]], color: int) -> Shape:
     max_row = max(row for row, col in cells)
     min_col = min(col for row, col in cells)
     max_col = max(col for row, col in cells)
+    width = max_col - min_col + 1
+    height = max_row - min_row + 1
     return Shape(
         row=min_row,
         col=min_col,
-        width=max_col - min_col + 1,
-        height=max_row - min_row + 1,
+        width=width,
+        height=height,
         cells=cells,
         color=color,
+        is_two_by_two=(height == 2 and width == 2),
     )
 
 
@@ -130,6 +138,68 @@ def get_square_abstraction(shapes: list[Shape]) -> Shape:
                 )
 
 
+def get_two_by_two_uni_ray_direction_by_color(
+    input_shapes: list[Shape], output_grid: Grid
+) -> dict[int, str]:
+    direction_by_color: dict[int, str] = {}
+    for shape in input_shapes:
+        if shape.is_two_by_two:
+            color = shape.color
+            # Check rays in all four diagonal directions
+            directions_info = [
+                {"dir": "tl", "offset": (-1, -1)},
+                {"dir": "tr", "offset": (-1, 1)},
+                {"dir": "bl", "offset": (1, -1)},
+                {"dir": "br", "offset": (1, 1)},
+            ]
+            for direction_info in directions_info:
+                direction = direction_info["dir"]
+                offset_row, offset_col = direction_info["offset"]
+                start_row = shape.row + offset_row
+                start_col = shape.col + offset_col
+                if _check_ray_from_location(
+                    start_row, start_col, direction, color, output_grid
+                ):
+                    if color in direction_by_color:
+                        # If we already have a direction for this color, it means it's not unique
+                        direction_by_color[color] = None
+                    else:
+                        direction_by_color[color] = direction
+
+    return direction_by_color
+
+
+def _check_ray_from_location(
+    start_row: int, start_col: int, direction: str, color: int, output_grid: Grid
+) -> str | None:
+    if (
+        start_row < 0
+        or start_row >= output_grid.shape[0]
+        or start_col < 0
+        or start_col >= output_grid.shape[1]
+    ):
+        return False
+
+    while (
+        0 <= start_row < output_grid.shape[0] and 0 <= start_col < output_grid.shape[1]
+    ):
+        if output_grid[start_row, start_col] != color:
+            return False
+        if direction == "tl":
+            start_row -= 1
+            start_col -= 1
+        elif direction == "tr":
+            start_row -= 1
+            start_col += 1
+        elif direction == "bl":
+            start_row += 1
+            start_col -= 1
+        elif direction == "br":
+            start_row += 1
+            start_col += 1
+    return True
+
+
 def observe(examples: list, test_input: Grid) -> Observations:
     example_observations = []
     single_output_color = None
@@ -139,6 +209,7 @@ def observe(examples: list, test_input: Grid) -> Observations:
         input_square_abstraction = get_square_abstraction(input_shapes)
         output_colors = set(np.unique(output_grid)) - {0}
         output_colors_count = len(output_colors)
+        all_inputs_only_two_by_twos = all(shape.is_two_by_two for shape in input_shapes)
 
         if input_square_abstraction:
             input_square_abstraction_color = input_square_abstraction.color
@@ -148,6 +219,11 @@ def observe(examples: list, test_input: Grid) -> Observations:
                 single_output_color = output_colors.pop()
             elif single_output_color != output_colors.pop():
                 single_output_color = None
+
+        if all_inputs_only_two_by_twos:
+            two_by_two_uni_ray_direction_by_color = (
+                get_two_by_two_uni_ray_direction_by_color(input_shapes, output_grid)
+            )
 
         example_observations.append(
             ExampleObservations(
@@ -162,16 +238,19 @@ def observe(examples: list, test_input: Grid) -> Observations:
                 output_colors_count=output_colors_count,
                 input_shapes=input_shapes,
                 output_shapes=get_shapes(output_grid),
+                input_only_two_by_twos=all_inputs_only_two_by_twos,
+                two_by_two_uni_ray_direction_by_color=two_by_two_uni_ray_direction_by_color
+                if all_inputs_only_two_by_twos
+                else None,
             )
         )
 
     test_shapes = get_shapes(test_input)
     test_input_square_abstraction = get_square_abstraction(test_shapes)
-    
+
     if test_input_square_abstraction:
-        
         test_input_square_abstraction_color = test_input_square_abstraction.color
-        
+
     test_observations = ExampleObservations(
         input_grid=test_input,
         input_square_abstraction=test_input_square_abstraction,
@@ -204,6 +283,18 @@ def observe(examples: list, test_input: Grid) -> Observations:
         single_shape_everywhere=all(
             len(obs.input_shapes) == 1 and len(obs.output_shapes) == 1
             for obs in example_observations
+        ),
+        all_inputs_only_two_by_twos=all(
+            obs.input_only_two_by_twos for obs in example_observations
+        ),
+        consistent_two_by_two_uni_ray_direction_by_color=(
+            example_observations[0].two_by_two_uni_ray_direction_by_color
+            if all(
+                obs.two_by_two_uni_ray_direction_by_color
+                == example_observations[0].two_by_two_uni_ray_direction_by_color
+                for obs in example_observations
+            )
+            else None
         ),
         example_observations=example_observations,
         test_observations=test_observations,

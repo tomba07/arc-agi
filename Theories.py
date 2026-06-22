@@ -1,11 +1,17 @@
 from Transformations import (
     Theory,
+    cast_uni_ray_from_two_by_twos,
     crop_to_square_abstraction,
     generate_spiral,
     recolor_to_square_abstraction,
-    rotate_90, rotate_180, rotate_270,
-    mirror_horizontally, swap_colors, make_hollow,
-    crop_to_content, recolor,
+    rotate_90,
+    rotate_180,
+    rotate_270,
+    mirror_horizontally,
+    swap_colors,
+    make_hollow,
+    crop_to_content,
+    recolor,
 )
 from Observations import Observations
 
@@ -34,10 +40,10 @@ RECOLOR_THEORIES: list[Theory] = [
 
 def get_theories(obs: Observations) -> list[Theory]:
     theories: list[Theory] = []
-    
+
     if obs.single_shape_everywhere:
         theories.append([crop_to_content])
-        
+
     if obs.all_inputs_empty and obs.single_output_color is not None:
         theories.append([generate_spiral(obs.single_output_color)])
 
@@ -46,9 +52,12 @@ def get_theories(obs: Observations) -> list[Theory]:
 
     if obs.grid_size_decreases:
         theories.extend(SIZE_REDUCING_THEORIES)
-        
+
     if obs.input_square_abstraction_everywhere:
         theories.append([crop_to_square_abstraction, recolor_to_square_abstraction])
+
+    if obs.consistent_two_by_two_uni_ray_direction_by_color:
+        theories.append([cast_uni_ray_from_two_by_twos])
 
     theories.extend(RECOLOR_THEORIES)
 

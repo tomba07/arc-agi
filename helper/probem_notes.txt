@@ -68,6 +68,8 @@ MS C
  - obs: 4 dot square, single output color, matches colors
  - theory: crop, color change
 5c0a986e: 4 dot uni-ray cast
+ - obs: Input only 2-by-2s
+ - theory: cast_rays_from_two_by_twos
 7b6016b9: bg & enclosed fill
 9af7a82c: sort & arrange colors
 22eb0ac0: connect opposing colors
