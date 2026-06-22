@@ -31,6 +31,7 @@ class ExampleObservations:
     input_shapes: list[Shape]
     output_shapes: list[Shape]
     output_grid: Grid = None
+    input_square_abstraction: Shape = None
     input_square_abstraction_color: int = None
 
 
@@ -121,7 +122,7 @@ def get_square_abstraction(shapes: list[Shape]) -> Shape:
                 return Shape(
                     row=rows[0],
                     col=cols[0],
-                    width=cols[1] - cols[0] + 1,
+                    width=cols[2] - cols[0] + 1,
                     height=rows[2] - rows[0] + 1,
                     cells=set((row, col) for row in rows for col in cols),
                     is_square_abstraction=True,
@@ -152,6 +153,7 @@ def observe(examples: list, test_input: Grid) -> Observations:
             ExampleObservations(
                 input_grid=input_grid,
                 output_grid=output_grid,
+                input_square_abstraction=input_square_abstraction,
                 input_square_abstraction_color=input_square_abstraction_color
                 if input_square_abstraction
                 else None,
@@ -164,8 +166,18 @@ def observe(examples: list, test_input: Grid) -> Observations:
         )
 
     test_shapes = get_shapes(test_input)
+    test_input_square_abstraction = get_square_abstraction(test_shapes)
+    
+    if test_input_square_abstraction:
+        
+        test_input_square_abstraction_color = test_input_square_abstraction.color
+        
     test_observations = ExampleObservations(
         input_grid=test_input,
+        input_square_abstraction=test_input_square_abstraction,
+        input_square_abstraction_color=test_input_square_abstraction_color
+        if test_input_square_abstraction
+        else None,
         input_shape_count=len(test_shapes),
         output_colors=set(),
         output_colors_count=0,

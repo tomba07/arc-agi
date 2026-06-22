@@ -1,6 +1,8 @@
 from Transformations import (
     Theory,
+    crop_to_square_abstraction,
     generate_spiral,
+    recolor_to_square_abstraction,
     rotate_90, rotate_180, rotate_270,
     mirror_horizontally, swap_colors, make_hollow,
     crop_to_content, recolor,
@@ -44,6 +46,9 @@ def get_theories(obs: Observations) -> list[Theory]:
 
     if obs.grid_size_decreases:
         theories.extend(SIZE_REDUCING_THEORIES)
+        
+    if obs.input_square_abstraction_everywhere:
+        theories.append([crop_to_square_abstraction, recolor_to_square_abstraction])
 
     theories.extend(RECOLOR_THEORIES)
 

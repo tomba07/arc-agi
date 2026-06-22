@@ -116,3 +116,24 @@ def generate_spiral(color: int) -> Transform:
         return grid
 
     return fn
+
+def crop_to_square_abstraction(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
+    example = observations.test_observations if example_index is None else observations.example_observations[example_index]
+    input_square_abstraction = example.input_square_abstraction
+    
+    if input_square_abstraction is None:
+        return grid  # No abstraction to crop to
+    else:
+        row, col, width, height = input_square_abstraction.row, input_square_abstraction.col, input_square_abstraction.width, input_square_abstraction.height
+        
+        return grid[row + 1:row + height - 1, col + 1:col + width - 1]
+    
+def recolor_to_square_abstraction(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
+    example = observations.test_observations if example_index is None else observations.example_observations[example_index]
+    input_square_abstraction = example.input_square_abstraction
+    
+    if input_square_abstraction is None:
+        return grid  # No abstraction to recolor to
+    else:
+        color = input_square_abstraction.color
+        return np.where(grid != 0, color, grid)
