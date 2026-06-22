@@ -53,7 +53,7 @@ def mirror_horizontally(
     return np.maximum(grid, np.flipud(grid))
 
 
-def recolor(from_color: int, to_color: int) -> Transform:
+def make_recolor_transformation(from_color: int, to_color: int) -> Transform:
     def fn(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
         return np.where(grid == from_color, to_color, grid)
 
@@ -96,7 +96,7 @@ def make_hollow(
     return result
 
 
-def generate_spiral(color: int) -> Transform:
+def make_spiral_transformation(color: int) -> Transform:
     def fn(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
         grid = grid.copy()
         grid.fill(color)
@@ -219,7 +219,7 @@ def cast_uni_ray_from_two_by_twos(
         return result
 
 
-def recolor_by_enclosure(flip_colors: bool = False) -> Transform:
+def make_recolor_by_enclosure_transformation(flip_colors: bool = False) -> Transform:
     def fn(
         grid: Grid, observations: Observations, example_index: int | None
     ) -> Grid:
