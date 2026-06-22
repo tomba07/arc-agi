@@ -38,27 +38,21 @@ RECOLOR_THEORIES: list[Theory] = [
 ]
 
 
-def get_theories(obs: Observations) -> list[Theory]:
+def get_theories(observations: Observations) -> list[Theory]:
     theories: list[Theory] = []
 
-    if obs.single_shape_everywhere:
+    if observations.single_shape_everywhere:
         theories.append([crop_to_content])
-
-    if obs.all_inputs_empty and obs.single_output_color is not None:
-        theories.append([generate_spiral(obs.single_output_color)])
-
-    if obs.grid_size_stays_identical:
+    if observations.all_inputs_empty and observations.single_output_color is not None:
+        theories.append([generate_spiral(observations.single_output_color)])
+    if observations.input_square_abstraction_everywhere:
+        theories.append([crop_to_square_abstraction, recolor_to_square_abstraction])
+    if observations.consistent_two_by_two_uni_ray_direction_by_color:
+        theories.append([cast_uni_ray_from_two_by_twos])
+    if observations.grid_size_stays_identical:
         theories.extend(SAME_SIZE_THEORIES)
-
-    if obs.grid_size_decreases:
+    if observations.grid_size_decreases:
         theories.extend(SIZE_REDUCING_THEORIES)
 
-    if obs.input_square_abstraction_everywhere:
-        theories.append([crop_to_square_abstraction, recolor_to_square_abstraction])
-
-    if obs.consistent_two_by_two_uni_ray_direction_by_color:
-        theories.append([cast_uni_ray_from_two_by_twos])
-
     theories.extend(RECOLOR_THEORIES)
-
     return theories
