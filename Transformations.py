@@ -11,10 +11,13 @@ Theory = list[Transform]
 
 def apply_theory(
     theory: Theory,
-    grid: Grid,
     observations: Observations,
     example_index: int | None,
 ) -> Grid:
+    if example_index is None:
+        grid = observations.test_observations.input_grid.copy()
+    else:
+        grid = observations.example_observations[example_index].input_grid.copy()
     for fn in theory:
         grid = fn(grid, observations, example_index)
     return grid

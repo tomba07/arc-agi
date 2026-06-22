@@ -21,11 +21,8 @@ class ArcAgent:
     def _validate_theory(self, theory: Theory, examples, obs) -> bool:
         try:
             return all(
-                np.array_equal(
-                    apply_theory(theory, inp, obs, i),
-                    out,
-                )
-                for i, (inp, out) in enumerate(examples)
+                np.array_equal(apply_theory(theory, obs, i), out)
+                for i, (_, out) in enumerate(examples)
             )
         except Exception:
             return False
@@ -34,12 +31,12 @@ class ArcAgent:
         examples = self._extract_simplified_examples(arc_problem)
         test_input = arc_problem.test_set().get_input_data().data()
 
-        obs = observe(examples)
+        obs = observe(examples, test_input)
 
         for theory in get_theories(obs):
             if self._validate_theory(theory, examples, obs):
                 print(f"{arc_problem.problem_name()}: matched")
-                return [apply_theory(theory, test_input, obs, None)]
+                return [apply_theory(theory, obs, None)]
 
         print(f"{arc_problem.problem_name()}: no match")
         return []

@@ -24,11 +24,13 @@ class Shape:
 
 @dataclass
 class ExampleObservations:
+    input_grid: Grid
     input_shape_count: int
     output_colors: set[int]
     output_colors_count: int
     input_shapes: list[Shape]
     output_shapes: list[Shape]
+    output_grid: Grid = None
     input_square_abstraction_color: int = None
 
 
@@ -127,7 +129,7 @@ def get_square_abstraction(shapes: list[Shape]) -> Shape:
                 )
 
 
-def observe(examples: list) -> Observations:
+def observe(examples: list, test_input: Grid) -> Observations:
     example_observations = []
     single_output_color = None
 
@@ -148,6 +150,8 @@ def observe(examples: list) -> Observations:
 
         example_observations.append(
             ExampleObservations(
+                input_grid=input_grid,
+                output_grid=output_grid,
                 input_square_abstraction_color=input_square_abstraction_color
                 if input_square_abstraction
                 else None,
@@ -158,6 +162,16 @@ def observe(examples: list) -> Observations:
                 output_shapes=get_shapes(output_grid),
             )
         )
+
+    test_shapes = get_shapes(test_input)
+    test_observations = ExampleObservations(
+        input_grid=test_input,
+        input_shape_count=len(test_shapes),
+        output_colors=set(),
+        output_colors_count=0,
+        input_shapes=test_shapes,
+        output_shapes=[],
+    )
 
     return Observations(
         input_square_abstraction_everywhere=all(
@@ -180,4 +194,5 @@ def observe(examples: list) -> Observations:
             for obs in example_observations
         ),
         example_observations=example_observations,
+        test_observations=test_observations,
     )
