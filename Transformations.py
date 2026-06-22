@@ -2,42 +2,54 @@ from typing import Callable
 
 import numpy as np
 
-from Observations import Shape
+from Observations import Shape, Observations
 
 Grid = np.ndarray
-Theory = list[Callable[[Grid, list[Shape]], Grid]]
+Transform = Callable[[Grid, Observations, int | None], Grid]
+Theory = list[Transform]
 
 
-def apply_theory(theory: Theory, grid: Grid, shapes: list[Shape]) -> Grid:
+def apply_theory(
+    theory: Theory,
+    grid: Grid,
+    observations: Observations,
+    example_index: int | None,
+) -> Grid:
     for fn in theory:
-        grid = fn(grid, shapes)
+        grid = fn(grid, observations, example_index)
     return grid
 
 
-def rotate_90(grid: Grid, shapes: list[Shape]) -> Grid:
+def _get_shapes(observations: Observations, example_index: int | None) -> list[Shape]:
+    if example_index is None:
+        return observations.test_observations.input_shapes
+    return observations.example_observations[example_index].input_shapes
+
+
+def rotate_90(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
     return np.rot90(grid, k=1)
 
 
-def rotate_180(grid: Grid, shapes: list[Shape]) -> Grid:
+def rotate_180(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
     return np.rot90(grid, k=2)
 
 
-def rotate_270(grid: Grid, shapes: list[Shape]) -> Grid:
+def rotate_270(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
     return np.rot90(grid, k=3)
 
 
-def mirror_horizontally(grid: Grid, shapes: list[Shape]) -> Grid:
+def mirror_horizontally(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
     return np.maximum(grid, np.flipud(grid))
 
 
-def recolor(from_color: int, to_color: int) -> Callable[[Grid, list[Shape]], Grid]:
-    def fn(grid: Grid, shapes: list[Shape]) -> Grid:
+def recolor(from_color: int, to_color: int) -> Transform:
+    def fn(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
         return np.where(grid == from_color, to_color, grid)
 
     return fn
 
 
-def swap_colors(grid: Grid, shapes: list[Shape]) -> Grid:
+def swap_colors(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
     colors = sorted(set(np.unique(grid)) - {0})
     if len(colors) != 2:
         return grid
@@ -45,7 +57,8 @@ def swap_colors(grid: Grid, shapes: list[Shape]) -> Grid:
     return np.select([grid == color1, grid == color2], [color2, color1], grid)
 
 
-def crop_to_content(grid: Grid, shapes: list[Shape]) -> Grid:
+def crop_to_content(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
+    shapes = _get_shapes(observations, example_index)
     if not shapes:
         return grid
     min_row = min(s.row for s in shapes)
@@ -55,7 +68,8 @@ def crop_to_content(grid: Grid, shapes: list[Shape]) -> Grid:
     return grid[min_row : max_row + 1, min_col : max_col + 1]
 
 
-def make_hollow(grid: Grid, shapes: list[Shape]) -> Grid:
+def make_hollow(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
+    shapes = _get_shapes(observations, example_index)
     all_cells = set(cell for s in shapes for cell in s.cells)
     result = grid.copy()
     for row, col in all_cells:
@@ -65,8 +79,8 @@ def make_hollow(grid: Grid, shapes: list[Shape]) -> Grid:
     return result
 
 
-def generate_spiral(color: int) -> Callable[[Grid, list[Shape]], Grid]:
-    def fn(grid: Grid, shapes: list[Shape]) -> Grid:
+def generate_spiral(color: int) -> Transform:
+    def fn(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
         grid = grid.copy()
         grid.fill(color)
         max_row, max_col = grid.shape
