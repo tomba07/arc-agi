@@ -3,6 +3,7 @@ from Transformations import (
     cast_uni_ray_from_two_by_twos,
     crop_to_square_abstraction,
     generate_spiral,
+    recolor_by_enclosure,
     recolor_to_square_abstraction,
     rotate_90,
     rotate_180,
@@ -49,6 +50,9 @@ def get_theories(observations: Observations) -> list[Theory]:
         theories.append([crop_to_square_abstraction, recolor_to_square_abstraction])
     if observations.consistent_two_by_two_uni_ray_direction_by_color:
         theories.append([cast_uni_ray_from_two_by_twos])
+    if observations.two_new_output_colors_everywhere and observations.enclosed_zero_shapes_everywhere and observations.non_enclosed_zero_shapes_everywhere:
+        theories.append([recolor_by_enclosure(flip_colors=False)])
+        theories.append([recolor_by_enclosure(flip_colors=True)])
     # if observations.grid_size_stays_identical:
     #     theories.extend(SAME_SIZE_THEORIES)
     # if observations.grid_size_decreases:

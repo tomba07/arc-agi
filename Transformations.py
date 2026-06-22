@@ -188,32 +188,58 @@ def cast_uni_ray_from_two_by_twos(
         for shape in shapes:
             direction = consistent_direction.get(shape.color)
 
-            if direction is "tl":
+            if direction == "tl":
                 start_row = shape.row - 1
                 start_col = shape.col - 1
-            elif direction is "tr":
+            elif direction == "tr":
                 start_row = shape.row - 1
                 start_col = shape.col + 2
-            elif direction is "bl":
+            elif direction == "bl":
                 start_row = shape.row + 2
                 start_col = shape.col - 1
-            elif direction is "br":
+            elif direction == "br":
                 start_row = shape.row + 2
                 start_col = shape.col + 2
 
             while 0 <= start_row < grid.shape[0] and 0 <= start_col < grid.shape[1]:
                 result[start_row, start_col] = shape.color
 
-                if direction is "tl":
+                if direction == "tl":
                     start_row -= 1
                     start_col -= 1
-                elif direction is "tr":
+                elif direction == "tr":
                     start_row -= 1
                     start_col += 1
-                elif direction is "bl":
+                elif direction == "bl":
                     start_row += 1
                     start_col -= 1
-                elif direction is "br":
+                elif direction == "br":
                     start_row += 1
                     start_col += 1
         return result
+
+
+def recolor_by_enclosure(flip_colors: bool = False) -> Transform:
+    def fn(
+        grid: Grid, observations: Observations, example_index: int | None
+    ) -> Grid:
+        colors = observations.consistent_new_output_colors
+        if colors is None or len(colors) != 2:
+            return grid
+        color_a, color_b = sorted(colors)
+        enclosed_color, non_enclosed_color = (color_b, color_a) if flip_colors else (color_a, color_b)
+        example = (
+            observations.test_observations
+            if example_index is None
+            else observations.example_observations[example_index]
+        )
+        result = grid.copy()
+        for shape in example.enclosed_zero_shapes:
+            for cell in shape.cells:
+                result[cell] = enclosed_color
+        for shape in example.non_enclosed_zero_shapes:
+            for cell in shape.cells:
+                result[cell] = non_enclosed_color
+        return result
+
+    return fn

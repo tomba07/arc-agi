@@ -31,11 +31,11 @@ class ArcAgent:
         examples = self._extract_simplified_examples(arc_problem)
         test_input = arc_problem.test_set().get_input_data().data()
 
+        # if arc_problem._id == "7b6016b9":
+        #     breakpoint()
+        
         obs = observe(examples, test_input)
         
-        # if arc_problem._id == "5c0a986e":
-        #     breakpoint()
-
         for theory in get_theories(obs):
             if self._validate_theory(theory, examples, obs):
                 print(f"{arc_problem.problem_name()}: matched")

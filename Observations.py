@@ -27,6 +27,8 @@ class Shape:
 class ExampleObservations:
     input_grid: Grid
     input_shape_count: int
+    enclosed_zero_shapes: list[Shape]
+    non_enclosed_zero_shapes: list[Shape]
     output_colors: set[int]
     output_colors_count: int
     new_output_colors: set[int]
@@ -52,6 +54,11 @@ class Observations:
     input_square_abstraction_everywhere: bool = False
     all_inputs_only_two_by_twos: bool = False
     consistent_two_by_two_uni_ray_direction_by_color: dict[int, str] = None
+    consistent_new_output_colors: list[int] = None
+    has_two_new_output_colors: bool = False
+    two_new_output_colors_everywhere: bool = False
+    enclosed_zero_shapes_everywhere: bool = False
+    non_enclosed_zero_shapes_everywhere: bool = False
 
 
 def _collect_cells(
@@ -104,6 +111,60 @@ def get_shapes(grid: Grid) -> list[Shape]:
             shapes.append(_make_shape(cells_info.cells, cells_info.color))
 
     return shapes
+
+def _collect_zero_cells(
+    grid: Grid, start_row: int, start_col: int, visited: set
+) -> set[tuple[int, int]]:
+    cells: set[tuple[int, int]] = set()
+    queue = [(start_row, start_col)]
+    while queue:
+        row, col = queue.pop(0)
+        if (row, col) in visited or not (
+            0 <= row < grid.shape[0] and 0 <= col < grid.shape[1]
+        ):
+            continue
+        if grid[row, col] != 0:
+            continue
+        visited.add((row, col))
+        cells.add((row, col))
+        queue.extend([(row - 1, col), (row + 1, col), (row, col - 1), (row, col + 1)])
+    return cells
+
+
+def _get_zero_shapes(grid: Grid) -> list[Shape]:
+    visited: set[tuple[int, int]] = set()
+    zero_shapes = []
+    for start_row in range(grid.shape[0]):
+        for start_col in range(grid.shape[1]):
+            if grid[start_row, start_col] != 0 or (start_row, start_col) in visited:
+                continue
+            cells = _collect_zero_cells(grid, start_row, start_col, visited)
+            zero_shapes.append(_make_shape(cells, 0))
+
+    return zero_shapes
+
+def _get_enclosed_shapes(shapes: list[Shape], grid_shape: tuple[int, int]) -> list[Shape]:
+    max_row, max_col = grid_shape[0] - 1, grid_shape[1] - 1
+    enclosed_shapes = []
+    for shape in shapes:
+        if all(
+            0 < row < max_row and 0 < col < max_col
+            for row, col in shape.cells
+        ):
+            enclosed_shapes.append(shape)
+    return enclosed_shapes
+
+
+def _get_non_enclosed_shapes(shapes: list[Shape], grid_shape: tuple[int, int]) -> list[Shape]:
+    max_row, max_col = grid_shape[0] - 1, grid_shape[1] - 1
+    non_enclosed_shapes = []
+    for shape in shapes:
+        if any(
+            row == 0 or col == 0 or row == max_row or col == max_col
+            for row, col in shape.cells
+        ):
+            non_enclosed_shapes.append(shape)
+    return non_enclosed_shapes
 
 
 # For now, we are very picky about the square abstraction.
@@ -208,6 +269,9 @@ def observe(examples: list, test_input: Grid) -> Observations:
 
     for input_grid, output_grid in examples:
         input_shapes = get_shapes(input_grid)
+        zero_shapes = _get_zero_shapes(input_grid)
+        enclosed_zero_shapes = _get_enclosed_shapes(zero_shapes, input_grid.shape)
+        non_enclosed_zero_shapes = _get_non_enclosed_shapes(zero_shapes, input_grid.shape)
         input_square_abstraction = get_square_abstraction(input_shapes)
         input_colors = set(np.unique(input_grid)) - {0}
         output_colors = set(np.unique(output_grid)) - {0}
@@ -234,6 +298,8 @@ def observe(examples: list, test_input: Grid) -> Observations:
             ExampleObservations(
                 input_grid=input_grid,
                 output_grid=output_grid,
+                enclosed_zero_shapes=enclosed_zero_shapes,
+                non_enclosed_zero_shapes=non_enclosed_zero_shapes,
                 input_square_abstraction=input_square_abstraction,
                 input_square_abstraction_color=input_square_abstraction_color
                 if input_square_abstraction
@@ -254,21 +320,23 @@ def observe(examples: list, test_input: Grid) -> Observations:
 
     test_shapes = get_shapes(test_input)
     test_input_square_abstraction = get_square_abstraction(test_shapes)
-
-    if test_input_square_abstraction:
-        test_input_square_abstraction_color = test_input_square_abstraction.color
+    test_zero_shapes = _get_zero_shapes(test_input)
 
     test_observations = ExampleObservations(
         input_grid=test_input,
-        input_square_abstraction=test_input_square_abstraction,
-        input_square_abstraction_color=test_input_square_abstraction_color
-        if test_input_square_abstraction
-        else None,
         input_shape_count=len(test_shapes),
+        enclosed_zero_shapes=_get_enclosed_shapes(test_zero_shapes, test_input.shape),
+        non_enclosed_zero_shapes=_get_non_enclosed_shapes(test_zero_shapes, test_input.shape),
         output_colors=set(),
         output_colors_count=0,
+        new_output_colors=set(),
+        new_output_colors_count=0,
         input_shapes=test_shapes,
         output_shapes=[],
+        input_square_abstraction=test_input_square_abstraction,
+        input_square_abstraction_color=test_input_square_abstraction.color
+        if test_input_square_abstraction
+        else None,
     )
 
     return Observations(
@@ -303,6 +371,19 @@ def observe(examples: list, test_input: Grid) -> Observations:
             )
             else None
         ),
+        consistent_new_output_colors=(
+            example_observations[0].new_output_colors
+            if all(
+                obs.new_output_colors == example_observations[0].new_output_colors
+                for obs in example_observations
+            )
+            else None
+        ),
+        two_new_output_colors_everywhere=all(
+            obs.new_output_colors_count == 2 for obs in example_observations
+        ),
+        enclosed_zero_shapes_everywhere=all(len(obs.enclosed_zero_shapes) > 0 for obs in example_observations),
+        non_enclosed_zero_shapes_everywhere=all(len(obs.non_enclosed_zero_shapes) > 0 for obs in example_observations),
         example_observations=example_observations,
         test_observations=test_observations,
     )
