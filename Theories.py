@@ -49,10 +49,10 @@ def get_theories(observations: Observations) -> list[Theory]:
         theories.append([crop_to_square_abstraction, recolor_to_square_abstraction])
     if observations.consistent_two_by_two_uni_ray_direction_by_color:
         theories.append([cast_uni_ray_from_two_by_twos])
-    if observations.grid_size_stays_identical:
-        theories.extend(SAME_SIZE_THEORIES)
-    if observations.grid_size_decreases:
-        theories.extend(SIZE_REDUCING_THEORIES)
+    # if observations.grid_size_stays_identical:
+    #     theories.extend(SAME_SIZE_THEORIES)
+    # if observations.grid_size_decreases:
+    #     theories.extend(SIZE_REDUCING_THEORIES)
 
     theories.extend(RECOLOR_THEORIES)
     return theories
