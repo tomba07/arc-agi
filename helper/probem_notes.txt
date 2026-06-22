@@ -74,6 +74,8 @@ MS C
  - obs: single color to 3 colors, enclosed_zero_cells
  - theory: change_cell_colors(non_enclosed_zero_cells), change_cell_colors(enclosed_zero_cells)
 9af7a82c: sort & arrange colors
+ - obs: color count stays same, grid size changes
+ - theory: rearrange_colored_cells(direction, increasing)
 22eb0ac0: connect opposing colors
 25d487eb: spaceship ray
 62c24649: mirror 2x

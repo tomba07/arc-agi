@@ -40,6 +40,9 @@ class ExampleObservations:
     input_square_abstraction_color: int = None
     input_only_two_by_twos: bool = False
     two_by_two_uni_ray_direction_by_color: dict[int, str] = None
+    input_cell_count_by_color: dict[int, int] = None
+    output_cell_count_by_color: dict[int, int] = None
+    cell_count_by_color_identical: bool = None
 
 
 @dataclass
@@ -59,6 +62,7 @@ class Observations:
     two_new_output_colors_everywhere: bool = False
     enclosed_zero_shapes_everywhere: bool = False
     non_enclosed_zero_shapes_everywhere: bool = False
+    cell_count_by_color_identical_everywhere: bool = None
 
 
 def _collect_cells(
@@ -279,6 +283,9 @@ def observe(examples: list, test_input: Grid) -> Observations:
         new_output_colors = output_colors - input_colors
         new_output_colors_count = len(new_output_colors)
         all_inputs_only_two_by_twos = all(shape.is_two_by_two for shape in input_shapes)
+        input_cell_count_by_color = {color: np.sum(input_grid == color) for color in input_colors}
+        output_cell_count_by_color = {color: np.sum(output_grid == color) for color in output_colors}   
+        cell_count_by_color_identical = input_cell_count_by_color == output_cell_count_by_color
 
         if input_square_abstraction:
             input_square_abstraction_color = input_square_abstraction.color
@@ -315,12 +322,17 @@ def observe(examples: list, test_input: Grid) -> Observations:
                 two_by_two_uni_ray_direction_by_color=two_by_two_uni_ray_direction_by_color
                 if all_inputs_only_two_by_twos
                 else None,
+                input_cell_count_by_color=input_cell_count_by_color,
+                output_cell_count_by_color=output_cell_count_by_color,
+                cell_count_by_color_identical=cell_count_by_color_identical,
             )
         )
 
     test_shapes = get_shapes(test_input)
     test_input_square_abstraction = get_square_abstraction(test_shapes)
     test_zero_shapes = _get_zero_shapes(test_input)
+    test_input_colors = set(np.unique(test_input)) - {0}
+    test_input_cell_count_by_color = {color: int(np.sum(test_input == color)) for color in test_input_colors}
 
     test_observations = ExampleObservations(
         input_grid=test_input,
@@ -337,6 +349,7 @@ def observe(examples: list, test_input: Grid) -> Observations:
         input_square_abstraction_color=test_input_square_abstraction.color
         if test_input_square_abstraction
         else None,
+        input_cell_count_by_color=test_input_cell_count_by_color,
     )
 
     return Observations(
@@ -386,4 +399,7 @@ def observe(examples: list, test_input: Grid) -> Observations:
         non_enclosed_zero_shapes_everywhere=all(len(obs.non_enclosed_zero_shapes) > 0 for obs in example_observations),
         example_observations=example_observations,
         test_observations=test_observations,
+        cell_count_by_color_identical_everywhere=all(
+            obs.cell_count_by_color_identical for obs in example_observations
+        ),
     )

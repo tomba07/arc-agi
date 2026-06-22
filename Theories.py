@@ -13,6 +13,7 @@ from Transformations import (
     swap_colors,
     make_hollow,
     crop_to_content,
+    make_arrange_colored_cells_transformations
 )
 from Observations import Observations
 
@@ -53,10 +54,15 @@ def get_theories(observations: Observations) -> list[Theory]:
     if observations.two_new_output_colors_everywhere and observations.enclosed_zero_shapes_everywhere and observations.non_enclosed_zero_shapes_everywhere:
         theories.append([make_recolor_by_enclosure_transformation(flip_colors=False)])
         theories.append([make_recolor_by_enclosure_transformation(flip_colors=True)])
+    if observations.cell_count_by_color_identical_everywhere and not observations.grid_size_stays_identical:
+        directions = ["horizontal", "vertical"]
+        for direction in directions:
+            theories.append([make_arrange_colored_cells_transformations(direction, True)])
+            theories.append([make_arrange_colored_cells_transformations(direction, False)])
     # if observations.grid_size_stays_identical:
     #     theories.extend(SAME_SIZE_THEORIES)
     # if observations.grid_size_decreases:
     #     theories.extend(SIZE_REDUCING_THEORIES)
 
-    theories.extend(RECOLOR_THEORIES)
+    # theories.extend(RECOLOR_THEORIES)
     return theories

@@ -243,3 +243,41 @@ def make_recolor_by_enclosure_transformation(flip_colors: bool = False) -> Trans
         return result
 
     return fn
+
+def make_arrange_colored_cells_transformations(direction: str, increasing: bool = True) -> Transform:
+    def fn(
+        grid: Grid, observations: Observations, example_index: int | None
+    ) -> Grid:
+        example = (
+            observations.test_observations
+            if example_index is None
+            else observations.example_observations[example_index]
+        )
+        cell_count_by_color = example.input_cell_count_by_color
+
+        if cell_count_by_color is None:
+            return grid
+        
+        rows = None
+        cols = None
+
+        if (direction == "horizontal"):
+            rows = len(cell_count_by_color)
+            cols = max(cell_count_by_color.values())
+        elif (direction == "vertical"):
+            cols = len(cell_count_by_color)
+            rows = max(cell_count_by_color.values())
+
+
+        result = np.zeros((rows, cols), dtype=int)
+        
+        sorted_colors = sorted(cell_count_by_color.items(), key=lambda x: x[1], reverse=not increasing)
+        for i, (color, count) in enumerate(sorted_colors):
+            if direction == "horizontal":
+                result[i, :count] = color
+            elif direction == "vertical":
+                result[:count, i] = color
+
+        return result
+
+    return fn

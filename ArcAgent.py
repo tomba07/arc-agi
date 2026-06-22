@@ -31,7 +31,7 @@ class ArcAgent:
         examples = self._extract_simplified_examples(arc_problem)
         test_input = arc_problem.test_set().get_input_data().data()
 
-        # if arc_problem._id == "7b6016b9":
+        # if arc_problem._id == "9af7a82c":
         #     breakpoint()
         
         obs = observe(examples, test_input)
