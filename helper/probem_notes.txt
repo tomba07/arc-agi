@@ -1,21 +1,94 @@
+-----------
+MS B
+-----------
 1cf80156: crop
+  - obs: single shape, grid size change
+  - theory: crop(single_shape)
+
 28e73c20: spiral
-0520fde7: and
-623ea044: draw diagonal
+  - obs: input_empty, single_output_color
+  - theory: spiral(output_color)
+
+0520fde7: h-divider+AND
+ - obs: h-divider,
+ - theory: logical operations
+
+0520fde7: h-divider+AND
+ - obs: h-divider,
+ - theory: logical operations
+
+623ea044: single cell casts rays
+ - obs: single colored cell
+ - theory: cast rays from cell
+
 4347f46a: make hollow
-6150a2bd: rotate 180
-6430c8c4: divider & nor
-b94a9452: crop and invert
+ - obs: object_count_remains, object_sizes_stay_same
+ - theory: make_hollow
+
+6150a2bd: rotate
+ - obs: grid_rotated
+ - theory: rotate_grid
+
+6430c8c4: v-divider+NOR
+ - obs: v-divider,
+ - theory: logical operations
+
+b94a9452: crop & invert_colors
+ - obs: grid_size_decreases, object_count > 1
+ - theory: crop & invert colors
+
 b1948b0a: color change
-ce4f8723: divider & or
-ce22a75a: grow and color change
-d687bc17: colored walls attract cells
-ed36ccf7: -90 deg rotation
-f25ffba3: mirror horizontally
-f76d97a5: color changes
-f2829549: divider and nor
+ - obs: color_x_becomes_y
+ - theory: change_color
+
+ce4f8723: v-divider+OR
+ - obs: v-divider,
+ - theory: logical operations
+
+d687bc17: colored_walls_attract
+ - obs: walls_colored
+ - theory: move-cells-to-wall-direction
+
+ed36ccf7: rotation
+ - obs: grid_rotated
+ - theory: rotate_grid
+
+f25ffba3: v-mirror
+ - obs: grid_mirrored
+ - theory: mirror_grid
+
+f2829549: h-divider+NOR
+ - obs: h-divider,
+ - theory: logical operations
+
+-----------
+MS C
+-----------
+3de23699: 4 dot crop & color change
+ - obs: 4 dot square, single output color, matches colors
+ - theory: crop, color change
+5c0a986e: 4 dot uni-ray cast
+7b6016b9: bg & enclosed fill
+9af7a82c: sort & arrange colors
+22eb0ac0: connect opposing colors
+25d487eb: spaceship ray
+62c24649: mirror 2x
+74dd1130: rotate & mirror
+3428a4f5: v divider & xor
+b2862040: enclosing shapes color change
+bbc9ae5d: ?
+cf98881b: h dividers & right to left overlay
+dc433765: move green 1 closer to yellow (diag allowed)
+e98196ab: v divider & overlay (no overlap)
+f8a8fe49: extract from brackets
+f35d900a: expand dots with other color and build connector lines
 
 
+
+
+
+----------------
+FURTHER NOTES
 ----------------
 1cf80156: crop
     - observations:
