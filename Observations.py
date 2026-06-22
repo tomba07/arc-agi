@@ -29,6 +29,8 @@ class ExampleObservations:
     input_shape_count: int
     output_colors: set[int]
     output_colors_count: int
+    new_output_colors: set[int]
+    new_output_colors_count: int
     input_shapes: list[Shape]
     output_shapes: list[Shape]
     output_grid: Grid = None
@@ -207,8 +209,11 @@ def observe(examples: list, test_input: Grid) -> Observations:
     for input_grid, output_grid in examples:
         input_shapes = get_shapes(input_grid)
         input_square_abstraction = get_square_abstraction(input_shapes)
+        input_colors = set(np.unique(input_grid)) - {0}
         output_colors = set(np.unique(output_grid)) - {0}
         output_colors_count = len(output_colors)
+        new_output_colors = output_colors - input_colors
+        new_output_colors_count = len(new_output_colors)
         all_inputs_only_two_by_twos = all(shape.is_two_by_two for shape in input_shapes)
 
         if input_square_abstraction:
@@ -236,6 +241,8 @@ def observe(examples: list, test_input: Grid) -> Observations:
                 input_shape_count=len(input_shapes),
                 output_colors=output_colors,
                 output_colors_count=output_colors_count,
+                new_output_colors=new_output_colors,
+                new_output_colors_count=new_output_colors_count,
                 input_shapes=input_shapes,
                 output_shapes=get_shapes(output_grid),
                 input_only_two_by_twos=all_inputs_only_two_by_twos,

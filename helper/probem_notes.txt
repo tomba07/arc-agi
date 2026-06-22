@@ -71,6 +71,8 @@ MS C
  - obs: Input only 2-by-2s
  - theory: cast_rays_from_two_by_twos
 7b6016b9: bg & enclosed fill
+ - obs: single color to 3 colors, enclosed_zero_cells
+ - theory: change_cell_colors(non_enclosed_zero_cells), change_cell_colors(enclosed_zero_cells)
 9af7a82c: sort & arrange colors
 22eb0ac0: connect opposing colors
 25d487eb: spaceship ray
