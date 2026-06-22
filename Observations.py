@@ -6,12 +6,20 @@ Grid = np.ndarray
 
 
 @dataclass
+class CellsInfo:
+    cells: set[tuple[int, int]]
+    color: int
+
+
+@dataclass
 class Shape:
     row: int
     col: int
     width: int
     height: int
-    cells: frozenset[tuple[int, int]]
+    cells: set[tuple[int, int]]
+    is_square_abstraction: bool = False
+    color: int = None
 
 
 @dataclass
@@ -21,6 +29,7 @@ class ExampleObservations:
     output_colors_count: int
     input_shapes: list[Shape]
     output_shapes: list[Shape]
+    input_square_abstraction_color: int = None
 
 
 @dataclass
@@ -32,13 +41,15 @@ class Observations:
     single_output_color: int = None
     example_observations: list[ExampleObservations] = None
     test_observations: ExampleObservations = None
+    input_square_abstraction_everywhere: bool = False
 
 
 def _collect_cells(
     grid: Grid, start_row: int, start_col: int, visited: set
-) -> frozenset[tuple[int, int]]:
+) -> CellsInfo:
     cells: set[tuple[int, int]] = set()
     queue = [(start_row, start_col)]
+    color = grid[start_row, start_col]
     while queue:
         row, col = queue.pop(0)
         if (row, col) in visited or not (
@@ -50,10 +61,11 @@ def _collect_cells(
         visited.add((row, col))
         cells.add((row, col))
         queue.extend([(row - 1, col), (row + 1, col), (row, col - 1), (row, col + 1)])
-    return frozenset(cells)
+
+    return CellsInfo(cells=cells, color=color)
 
 
-def _make_shape(cells: frozenset[tuple[int, int]]) -> Shape:
+def _make_shape(cells: set[tuple[int, int]], color: int) -> Shape:
     min_row = min(row for row, col in cells)
     max_row = max(row for row, col in cells)
     min_col = min(col for row, col in cells)
@@ -64,6 +76,7 @@ def _make_shape(cells: frozenset[tuple[int, int]]) -> Shape:
         width=max_col - min_col + 1,
         height=max_row - min_row + 1,
         cells=cells,
+        color=color,
     )
 
 
@@ -74,9 +87,44 @@ def get_shapes(grid: Grid) -> list[Shape]:
         for start_col in range(grid.shape[1]):
             if grid[start_row, start_col] == 0 or (start_row, start_col) in visited:
                 continue
-            cells = _collect_cells(grid, start_row, start_col, visited)
-            shapes.append(_make_shape(cells))
+            cells_info = _collect_cells(grid, start_row, start_col, visited)
+            shapes.append(_make_shape(cells_info.cells, cells_info.color))
+
     return shapes
+
+
+# For now, we are very picky about the square abstraction.
+# We only consider a single one. Also it has the have exactly 4 "1x1" shapes of same color with proper alignment.
+def get_square_abstraction(shapes: list[Shape]) -> Shape:
+    shapes_by_color: dict[int, list[Shape]] = {}
+
+    for shape in shapes:
+        if shape.color not in shapes_by_color:
+            shapes_by_color[shape.color] = []
+        shapes_by_color[shape.color].append(shape)
+
+    for color, shapes in shapes_by_color.items():
+        if len(shapes) == 4 and all(
+            shape.width == 1 and shape.height == 1 for shape in shapes
+        ):
+            rows = sorted(shape.row for shape in shapes)
+            cols = sorted(shape.col for shape in shapes)
+
+            if (
+                rows[0] == rows[1]
+                and rows[2] == rows[3]
+                and cols[0] == cols[1]
+                and cols[2] == cols[3]
+            ):
+                return Shape(
+                    row=rows[0],
+                    col=cols[0],
+                    width=cols[1] - cols[0] + 1,
+                    height=rows[2] - rows[0] + 1,
+                    cells=set((row, col) for row in rows for col in cols),
+                    is_square_abstraction=True,
+                    color=color,
+                )
 
 
 def observe(examples: list) -> Observations:
@@ -85,8 +133,12 @@ def observe(examples: list) -> Observations:
 
     for input_grid, output_grid in examples:
         input_shapes = get_shapes(input_grid)
+        input_square_abstraction = get_square_abstraction(input_shapes)
         output_colors = set(np.unique(output_grid)) - {0}
         output_colors_count = len(output_colors)
+
+        if input_square_abstraction:
+            input_square_abstraction_color = input_square_abstraction.color
 
         if output_colors_count == 1:
             if single_output_color is None:
@@ -96,6 +148,9 @@ def observe(examples: list) -> Observations:
 
         example_observations.append(
             ExampleObservations(
+                input_square_abstraction_color=input_square_abstraction_color
+                if input_square_abstraction
+                else None,
                 input_shape_count=len(input_shapes),
                 output_colors=output_colors,
                 output_colors_count=output_colors_count,
@@ -105,6 +160,10 @@ def observe(examples: list) -> Observations:
         )
 
     return Observations(
+        input_square_abstraction_everywhere=all(
+            obs.input_square_abstraction_color is not None
+            for obs in example_observations
+        ),
         all_inputs_empty=all(
             example_observations[i].input_shape_count == 0 for i in range(len(examples))
         ),
