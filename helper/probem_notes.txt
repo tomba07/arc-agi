@@ -89,6 +89,8 @@ MS C
  - obs: same size
  - theory: transpose
 3428a4f5: v divider & xor & color change
+ - obs: vertical divider
+ - theory: logical operation on divided parts
 b2862040: enclosing shapes color change
 bbc9ae5d: half height of width, growing fill
 cf98881b: h dividers & right to left overlay
