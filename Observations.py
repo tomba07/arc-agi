@@ -145,7 +145,7 @@ def _check_spaceship_shape(shapes: list[Shape], grid: Grid) -> Shape | None:
         if ratio_correct:
             #check up facing
             for direction in directions:
-                beam_color = _check_pyramid_shape(shape, grid, direction)
+                beam_color = _check_pyramid_shape_and_beam_color(shape, grid, direction)
                 if beam_color is not None:
                     tip_row = shape.row if direction == "up" else shape.row + shape.height - 1 if direction == "down" else shape.row + shape.height // 2
                     tip_col = shape.col + shape.width // 2 if direction in ["up", "down"] else shape.col if direction == "left" else shape.col + shape.width - 1
@@ -164,71 +164,35 @@ def _check_spaceship_shape(shapes: list[Shape], grid: Grid) -> Shape | None:
                     )
     return None
 
-def _check_pyramid_shape(shape: Shape, grid: Grid, direction: str) -> bool:
-    beam_color = None
-    
-    if direction == "up":
-        tip_col = shape.col + (shape.width // 2)
-        beam_row, beam_col = shape.row + shape.height - 1, tip_col
-        for i in range(shape.height):
-            row = shape.row + i
-            start_col = shape.col + (shape.width // 2) - i
-            end_col = shape.col + (shape.width // 2) + i
-            for col in range(start_col, end_col + 1):
-                if (row, col) == (beam_row, beam_col):
-                    continue
-                if grid[row, col] != shape.color:
-                    return None
-        beam_color = grid[beam_row, beam_col]
-        if beam_color == shape.color:
+def _check_pyramid_shape_and_beam_color(shape: Shape, grid: Grid, direction: str) -> int | None:
+    center_row = shape.row + shape.height // 2
+    center_col = shape.col + shape.width // 2
+
+    if direction in ("up", "down"):
+        beam_row = shape.row + shape.height - 1 if direction == "up" else shape.row
+        beam_col = center_col
+        cells = [
+            (shape.row + i if direction == "up" else shape.row + shape.height - 1 - i, center_col + dc)
+            for i in range(shape.height)
+            for dc in range(-i, i + 1)
+        ]
+    else:
+        beam_row = center_row
+        beam_col = shape.col + shape.width - 1 if direction == "left" else shape.col
+        cells = [
+            (center_row + dr, shape.col + i if direction == "left" else shape.col + shape.width - 1 - i)
+            for i in range(shape.width)
+            for dr in range(-i, i + 1)
+        ]
+
+    for row, col in cells:
+        if (row, col) == (beam_row, beam_col):
+            continue
+        if grid[row, col] != shape.color:
             return None
-    elif direction == "down":
-        tip_col = shape.col + (shape.width // 2)
-        beam_row, beam_col = shape.row, tip_col
-        for i in range(shape.height):
-            row = shape.row + (shape.height - 1) - i
-            start_col = shape.col + (shape.width // 2) - i
-            end_col = shape.col + (shape.width // 2) + i
-            for col in range(start_col, end_col + 1):
-                if (row, col) == (beam_row, beam_col):
-                    continue
-                if grid[row, col] != shape.color:
-                    return None
-        beam_color = grid[beam_row, beam_col]
-        if beam_color == shape.color:
-            return None
-    elif direction == "left":
-        tip_row = shape.row + (shape.height // 2)
-        beam_row, beam_col = tip_row, shape.col + shape.width - 1
-        for i in range(shape.width):
-            col = shape.col + i
-            start_row = shape.row + (shape.height // 2) - i
-            end_row = shape.row + (shape.height // 2) + i
-            for row in range(start_row, end_row + 1):
-                if (row, col) == (beam_row, beam_col):
-                    continue
-                if grid[row, col] != shape.color:
-                    return None
-        beam_color = grid[beam_row, beam_col]
-        if beam_color == shape.color:
-            return None
-    elif direction == "right":
-        tip_row = shape.row + (shape.height // 2)
-        beam_row, beam_col = tip_row, shape.col
-        for i in range(shape.width):
-            col = shape.col + (shape.width - 1) - i
-            start_row = shape.row + (shape.height // 2) - i
-            end_row = shape.row + (shape.height // 2) + i
-            for row in range(start_row, end_row + 1):
-                if (row, col) == (beam_row, beam_col):
-                    continue
-                if grid[row, col] != shape.color:
-                    return None
-        beam_color = grid[beam_row, beam_col]
-        if beam_color == shape.color:
-            return None
-    
-    return beam_color
+
+    beam_color = grid[beam_row, beam_col]
+    return None if beam_color == shape.color else beam_color
 
 # The shapes have to be at a border of the grid and have to have an opposing shape of the same color on the opposite side of the grid. The shapes have to be single cells (1x1).
 def _collect_opposing_same_color_single_cells(
