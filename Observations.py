@@ -22,7 +22,8 @@ class Shape:
     color: int = None
     is_two_by_two: bool = False
 
-#inherits from Shape
+
+# inherits from Shape
 @dataclass
 class Spaceship_Shape(Shape):
     is_spaceship_shape: bool = True
@@ -30,6 +31,7 @@ class Spaceship_Shape(Shape):
     direction: str = None  # "up", "down", "left", "right"
     tip_row: int = None
     tip_col: int = None
+
 
 @dataclass
 class ExampleObservations:
@@ -53,6 +55,7 @@ class ExampleObservations:
     cell_count_by_color_identical: bool = None
     opposing_same_color_single_cells: list[tuple[Shape, Shape]] = None
     spaceship_shape: Spaceship_Shape = None
+    output_twice_as_large_as_input: bool = False
 
 
 @dataclass
@@ -75,6 +78,7 @@ class Observations:
     cell_count_by_color_identical_everywhere: bool = None
     has_opposing_same_color_single_cells_everywhere: bool = False
     has_spaceship_shape_everywhere: bool = False
+    all_outputs_twice_as_large_as_inputs: bool = False
 
 
 def _collect_cells(
@@ -128,27 +132,40 @@ def get_shapes(grid: Grid) -> list[Shape]:
 
     return shapes
 
+
 def _check_spaceship_shape(shapes: list[Shape], grid: Grid) -> Shape | None:
     directions = ["up", "down", "left", "right"]
-    
-    #we only accept a single spaceship shape in the grid
+
+    # we only accept a single spaceship shape in the grid
     if len(shapes) != 1:
         return None
     else:
         shape = shapes[0]
         height = shape.height
         width = shape.width
-        #it could also be turned 90 degrees
+        # it could also be turned 90 degrees
         ratio_correct = width == height * 2 - 1 or height == width * 2 - 1
-        
-        #check if pyramid shape
+
+        # check if pyramid shape
         if ratio_correct:
-            #check up facing
+            # check up facing
             for direction in directions:
                 beam_color = _check_pyramid_shape_and_beam_color(shape, grid, direction)
                 if beam_color is not None:
-                    tip_row = shape.row if direction == "up" else shape.row + shape.height - 1 if direction == "down" else shape.row + shape.height // 2
-                    tip_col = shape.col + shape.width // 2 if direction in ["up", "down"] else shape.col if direction == "left" else shape.col + shape.width - 1
+                    tip_row = (
+                        shape.row
+                        if direction == "up"
+                        else shape.row + shape.height - 1
+                        if direction == "down"
+                        else shape.row + shape.height // 2
+                    )
+                    tip_col = (
+                        shape.col + shape.width // 2
+                        if direction in ["up", "down"]
+                        else shape.col
+                        if direction == "left"
+                        else shape.col + shape.width - 1
+                    )
                     return Spaceship_Shape(
                         row=shape.row,
                         col=shape.col,
@@ -160,11 +177,14 @@ def _check_spaceship_shape(shapes: list[Shape], grid: Grid) -> Shape | None:
                         direction=direction,
                         beam_color=beam_color,
                         tip_row=tip_row,
-                        tip_col=tip_col
+                        tip_col=tip_col,
                     )
     return None
 
-def _check_pyramid_shape_and_beam_color(shape: Shape, grid: Grid, direction: str) -> int | None:
+
+def _check_pyramid_shape_and_beam_color(
+    shape: Shape, grid: Grid, direction: str
+) -> int | None:
     center_row = shape.row + shape.height // 2
     center_col = shape.col + shape.width // 2
 
@@ -172,7 +192,12 @@ def _check_pyramid_shape_and_beam_color(shape: Shape, grid: Grid, direction: str
         beam_row = shape.row + shape.height - 1 if direction == "up" else shape.row
         beam_col = center_col
         cells = [
-            (shape.row + i if direction == "up" else shape.row + shape.height - 1 - i, center_col + dc)
+            (
+                shape.row + i
+                if direction == "up"
+                else shape.row + shape.height - 1 - i,
+                center_col + dc,
+            )
             for i in range(shape.height)
             for dc in range(-i, i + 1)
         ]
@@ -180,7 +205,12 @@ def _check_pyramid_shape_and_beam_color(shape: Shape, grid: Grid, direction: str
         beam_row = center_row
         beam_col = shape.col + shape.width - 1 if direction == "left" else shape.col
         cells = [
-            (center_row + dr, shape.col + i if direction == "left" else shape.col + shape.width - 1 - i)
+            (
+                center_row + dr,
+                shape.col + i
+                if direction == "left"
+                else shape.col + shape.width - 1 - i,
+            )
             for i in range(shape.width)
             for dr in range(-i, i + 1)
         ]
@@ -193,6 +223,7 @@ def _check_pyramid_shape_and_beam_color(shape: Shape, grid: Grid, direction: str
 
     beam_color = grid[beam_row, beam_col]
     return None if beam_color == shape.color else beam_color
+
 
 # The shapes have to be at a border of the grid and have to have an opposing shape of the same color on the opposite side of the grid. The shapes have to be single cells (1x1).
 def _collect_opposing_same_color_single_cells(
@@ -402,6 +433,10 @@ def observe(examples: list, test_input: Grid) -> Observations:
             input_cell_count_by_color == output_cell_count_by_color
         )
         spaceship_shape = _check_spaceship_shape(input_shapes, input_grid)
+        output_twice_as_large_as_input = (
+            output_grid.shape[0] == 2 * input_grid.shape[0]
+            and output_grid.shape[1] == 2 * input_grid.shape[1]
+        )
 
         if input_square_abstraction:
             input_square_abstraction_color = input_square_abstraction.color
@@ -442,7 +477,8 @@ def observe(examples: list, test_input: Grid) -> Observations:
                 input_cell_count_by_color=input_cell_count_by_color,
                 output_cell_count_by_color=output_cell_count_by_color,
                 cell_count_by_color_identical=cell_count_by_color_identical,
-                spaceship_shape=spaceship_shape
+                spaceship_shape=spaceship_shape,
+                output_twice_as_large_as_input=output_twice_as_large_as_input,
             )
         )
 
@@ -477,7 +513,7 @@ def observe(examples: list, test_input: Grid) -> Observations:
         if test_input_square_abstraction
         else None,
         input_cell_count_by_color=test_input_cell_count_by_color,
-        spaceship_shape=test_spaceship_shape
+        spaceship_shape=test_spaceship_shape,
     )
 
     return Observations(
@@ -540,5 +576,9 @@ def observe(examples: list, test_input: Grid) -> Observations:
         ),
         has_spaceship_shape_everywhere=all(
             obs.spaceship_shape is not None for obs in example_observations
-        ) and test_observations.spaceship_shape is not None
+        )
+        and test_observations.spaceship_shape is not None,
+        all_outputs_twice_as_large_as_inputs=all(
+            obs.output_twice_as_large_as_input for obs in example_observations
+        ),
     )

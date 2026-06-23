@@ -342,3 +342,10 @@ def create_beam_from_spaceship_tip(
             result[tip_row, c] = color
 
     return result
+
+def mirror_horizontally_and_vertically(
+    grid: Grid, observations: Observations, example_index: int | None
+) -> Grid:
+    top = np.hstack([grid, np.fliplr(grid)])
+    bottom = np.hstack([np.flipud(grid), np.flipud(np.fliplr(grid))])
+    return np.vstack([top, bottom])

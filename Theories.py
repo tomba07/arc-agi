@@ -7,6 +7,7 @@ from Transformations import (
     make_spiral_transformation,
     make_recolor_transformation,
     make_recolor_by_enclosure_transformation,
+    mirror_horizontally_and_vertically,
     recolor_to_square_abstraction,
     rotate_90,
     rotate_180,
@@ -65,6 +66,8 @@ def get_theories(observations: Observations) -> list[Theory]:
         theories.append([connect_same_color_opposing_cells])
     if observations.has_spaceship_shape_everywhere:
         theories.append([create_beam_from_spaceship_tip])
+    if observations.all_outputs_twice_as_large_as_inputs:
+        theories.append([mirror_horizontally_and_vertically])
     # if observations.grid_size_stays_identical:
     #     theories.extend(SAME_SIZE_THEORIES)
     # if observations.grid_size_decreases:

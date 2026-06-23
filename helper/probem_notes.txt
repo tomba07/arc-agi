@@ -77,8 +77,14 @@ MS C
  - obs: color count stays same, grid size changes
  - theory: rearrange_colored_cells(direction, increasing)
 22eb0ac0: connect opposing colors
+ - obs: opposing single cells in all examples
+ - theory: connect opposing cells
 25d487eb: spaceship ray
+ - obs: single spaceship everywhere
+ - theory: cast ray from spaceship tip
 62c24649: mirror 2x
+ - obs: output_twice_as_large
+ - theory: fill_with_mirror
 74dd1130: rotate & mirror
 3428a4f5: v divider & xor
 b2862040: enclosing shapes color change
