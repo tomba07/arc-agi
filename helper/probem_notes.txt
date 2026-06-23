@@ -82,7 +82,7 @@ MS C
 74dd1130: rotate & mirror
 3428a4f5: v divider & xor
 b2862040: enclosing shapes color change
-bbc9ae5d: ?
+bbc9ae5d: half height of width, growing fill
 cf98881b: h dividers & right to left overlay
 dc433765: move green 1 closer to yellow (diag allowed)
 e98196ab: v divider & overlay (no overlap)
