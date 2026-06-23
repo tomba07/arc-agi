@@ -86,6 +86,8 @@ MS C
  - obs: output_twice_as_large
  - theory: fill_with_mirror
 74dd1130: rotate & mirror
+ - obs: same size
+ - theory: transpose
 3428a4f5: v divider & xor
 b2862040: enclosing shapes color change
 bbc9ae5d: half height of width, growing fill

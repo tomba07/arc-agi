@@ -47,7 +47,13 @@ def rotate_270(
     return np.rot90(grid, k=3)
 
 
-def mirror_horizontally(
+def transpose(
+    grid: Grid, observations: Observations, example_index: int | None
+) -> Grid:
+    return grid.T
+
+
+def mirror_across_horizontal_axis(
     grid: Grid, observations: Observations, example_index: int | None
 ) -> Grid:
     return np.maximum(grid, np.flipud(grid))

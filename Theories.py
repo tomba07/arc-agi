@@ -12,10 +12,11 @@ from Transformations import (
     rotate_90,
     rotate_180,
     rotate_270,
-    mirror_horizontally,
+    mirror_across_horizontal_axis,
     swap_colors,
     make_hollow,
     crop_to_content,
+    transpose,
     make_arrange_colored_cells_transformations
 )
 from Observations import Observations
@@ -26,9 +27,11 @@ SAME_SIZE_THEORIES: list[Theory] = [
     [rotate_90],
     [rotate_180],
     [rotate_270],
-    [mirror_horizontally],
+    [mirror_across_horizontal_axis],
     [swap_colors],
     [make_hollow],
+    [rotate_90, mirror_across_horizontal_axis],
+    [transpose],
 ]
 
 SIZE_REDUCING_THEORIES: list[Theory] = [
@@ -68,8 +71,8 @@ def get_theories(observations: Observations) -> list[Theory]:
         theories.append([create_beam_from_spaceship_tip])
     if observations.all_outputs_twice_as_large_as_inputs:
         theories.append([mirror_horizontally_and_vertically])
-    # if observations.grid_size_stays_identical:
-    #     theories.extend(SAME_SIZE_THEORIES)
+    if observations.grid_size_stays_identical:
+        theories.extend(SAME_SIZE_THEORIES)
     # if observations.grid_size_decreases:
     #     theories.extend(SIZE_REDUCING_THEORIES)
 
