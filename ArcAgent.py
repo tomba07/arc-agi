@@ -2,8 +2,12 @@ import numpy as np
 
 from ArcProblem import ArcProblem
 from Transformations import Theory, apply_theory
-from Observations import observe
+from Observations import make_empty_observations, OBSERVATION_CHECKS
 from Theories import get_theories
+
+
+def _theory_key(theory: Theory) -> tuple:
+    return tuple(id(fn) for fn in theory)
 
 
 class ArcAgent:
@@ -31,15 +35,18 @@ class ArcAgent:
         examples = self._extract_simplified_examples(arc_problem)
         test_input = arc_problem.test_set().get_input_data().data()
 
-        # if arc_problem._id == "9af7a82c":
-        #     breakpoint()
-        
-        obs = observe(examples, test_input)
-        
-        for theory in get_theories(obs):
-            if self._validate_theory(theory, examples, obs):
-                print(f"{arc_problem.problem_name()}: matched")
-                return [apply_theory(theory, obs, None)]
+        obs = make_empty_observations(examples, test_input)
+        tested_theories: set[tuple] = set()
+
+        for check in OBSERVATION_CHECKS:
+            check(obs)
+            for theory in get_theories(obs):
+                key = _theory_key(theory)
+                if key not in tested_theories:
+                    tested_theories.add(key)
+                    if self._validate_theory(theory, examples, obs):
+                        print(f"{arc_problem.problem_name()}: matched")
+                        return [apply_theory(theory, obs, None)]
 
         print(f"{arc_problem.problem_name()}: no match")
         return []

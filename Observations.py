@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Callable
 
 import numpy as np
 
@@ -36,16 +37,16 @@ class Spaceship_Shape(Shape):
 @dataclass
 class ExampleObservations:
     input_grid: Grid
-    input_shape_count: int
-    enclosed_zero_shapes: list[Shape]
-    non_enclosed_zero_shapes: list[Shape]
-    output_colors: set[int]
-    output_colors_count: int
-    new_output_colors: set[int]
-    new_output_colors_count: int
-    input_shapes: list[Shape]
-    output_shapes: list[Shape]
     output_grid: Grid = None
+    input_shape_count: int = 0
+    enclosed_zero_shapes: list[Shape] = field(default_factory=list)
+    non_enclosed_zero_shapes: list[Shape] = field(default_factory=list)
+    output_colors: set[int] = field(default_factory=set)
+    output_colors_count: int = 0
+    new_output_colors: set[int] = field(default_factory=set)
+    new_output_colors_count: int = 0
+    input_shapes: list[Shape] = field(default_factory=list)
+    output_shapes: list[Shape] = field(default_factory=list)
     input_square_abstraction: Shape = None
     input_square_abstraction_color: int = None
     input_only_two_by_twos: bool = False
@@ -60,13 +61,13 @@ class ExampleObservations:
 
 @dataclass
 class Observations:
-    grid_size_stays_identical: bool
-    grid_size_decreases: bool
-    single_shape_everywhere: bool
+    example_observations: list[ExampleObservations]
+    test_observations: ExampleObservations
+    grid_size_stays_identical: bool = False
+    grid_size_decreases: bool = False
+    single_shape_everywhere: bool = False
     all_inputs_empty: bool = False
     single_output_color: int = None
-    example_observations: list[ExampleObservations] = None
-    test_observations: ExampleObservations = None
     input_square_abstraction_everywhere: bool = False
     all_inputs_only_two_by_twos: bool = False
     consistent_two_by_two_uni_ray_direction_by_color: dict[int, str] = None
@@ -80,6 +81,10 @@ class Observations:
     has_spaceship_shape_everywhere: bool = False
     all_outputs_twice_as_large_as_inputs: bool = False
 
+
+# ---------------------------------------------------------------------------
+# Low-level helpers (unchanged)
+# ---------------------------------------------------------------------------
 
 def _collect_cells(
     grid: Grid, start_row: int, start_col: int, visited: set
@@ -103,10 +108,10 @@ def _collect_cells(
 
 
 def _make_shape(cells: set[tuple[int, int]], color: int) -> Shape:
-    min_row = min(row for row, col in cells)
-    max_row = max(row for row, col in cells)
-    min_col = min(col for row, col in cells)
-    max_col = max(col for row, col in cells)
+    rows = [r for r, _ in cells]
+    cols = [c for _, c in cells]
+    min_row, max_row = min(rows), max(rows)
+    min_col, max_col = min(cols), max(cols)
     width = max_col - min_col + 1
     height = max_row - min_row + 1
     return Shape(
@@ -136,19 +141,15 @@ def get_shapes(grid: Grid) -> list[Shape]:
 def _check_spaceship_shape(shapes: list[Shape], grid: Grid) -> Shape | None:
     directions = ["up", "down", "left", "right"]
 
-    # we only accept a single spaceship shape in the grid
     if len(shapes) != 1:
         return None
     else:
         shape = shapes[0]
         height = shape.height
         width = shape.width
-        # it could also be turned 90 degrees
         ratio_correct = width == height * 2 - 1 or height == width * 2 - 1
 
-        # check if pyramid shape
         if ratio_correct:
-            # check up facing
             for direction in directions:
                 beam_color = _check_pyramid_shape_and_beam_color(shape, grid, direction)
                 if beam_color is not None:
@@ -225,7 +226,6 @@ def _check_pyramid_shape_and_beam_color(
     return None if beam_color == shape.color else beam_color
 
 
-# The shapes have to be at a border of the grid and have to have an opposing shape of the same color on the opposite side of the grid. The shapes have to be single cells (1x1).
 def _collect_opposing_same_color_single_cells(
     shapes: list[Shape],
 ) -> list[tuple[Shape, Shape]]:
@@ -306,8 +306,6 @@ def _get_non_enclosed_shapes(
     return non_enclosed_shapes
 
 
-# For now, we are very picky about the square abstraction.
-# We only consider a single one. Also it has the have exactly 4 "1x1" shapes of same color with proper alignment.
 def get_square_abstraction(shapes: list[Shape]) -> Shape:
     shapes_by_color: dict[int, list[Shape]] = {}
 
@@ -347,7 +345,6 @@ def get_two_by_two_uni_ray_direction_by_color(
     for shape in input_shapes:
         if shape.is_two_by_two:
             color = shape.color
-            # Check rays in all four diagonal directions
             directions_info = [
                 {"dir": "tl", "offset": (-1, -1)},
                 {"dir": "tr", "offset": (-1, 1)},
@@ -363,7 +360,6 @@ def get_two_by_two_uni_ray_direction_by_color(
                     start_row, start_col, direction, color, output_grid
                 ):
                     if color in direction_by_color:
-                        # If we already have a direction for this color, it means it's not unique
                         direction_by_color[color] = None
                     else:
                         direction_by_color[color] = direction
@@ -402,183 +398,239 @@ def _check_ray_from_location(
     return True
 
 
-def observe(examples: list, test_input: Grid) -> Observations:
-    example_observations = []
-    single_output_color = None
+# ---------------------------------------------------------------------------
+# Incremental observation checks
+# ---------------------------------------------------------------------------
 
-    for input_grid, output_grid in examples:
-        input_shapes = get_shapes(input_grid)
-        zero_shapes = _get_zero_shapes(input_grid)
-        opposing_same_color_single_cells = _collect_opposing_same_color_single_cells(
-            input_shapes
-        )
-        enclosed_zero_shapes = _get_enclosed_shapes(zero_shapes, input_grid.shape)
-        non_enclosed_zero_shapes = _get_non_enclosed_shapes(
-            zero_shapes, input_grid.shape
-        )
-        input_square_abstraction = get_square_abstraction(input_shapes)
-        input_colors = set(np.unique(input_grid)) - {0}
-        output_colors = set(np.unique(output_grid)) - {0}
-        output_colors_count = len(output_colors)
-        new_output_colors = output_colors - input_colors
-        new_output_colors_count = len(new_output_colors)
-        all_inputs_only_two_by_twos = all(shape.is_two_by_two for shape in input_shapes)
-        input_cell_count_by_color = {
-            color: np.sum(input_grid == color) for color in input_colors
-        }
-        output_cell_count_by_color = {
-            color: np.sum(output_grid == color) for color in output_colors
-        }
-        cell_count_by_color_identical = (
-            input_cell_count_by_color == output_cell_count_by_color
-        )
-        spaceship_shape = _check_spaceship_shape(input_shapes, input_grid)
-        output_twice_as_large_as_input = (
-            output_grid.shape[0] == 2 * input_grid.shape[0]
-            and output_grid.shape[1] == 2 * input_grid.shape[1]
-        )
+ObservationCheck = Callable[["Observations"], None]
 
-        if input_square_abstraction:
-            input_square_abstraction_color = input_square_abstraction.color
 
-        if output_colors_count == 1:
-            if single_output_color is None:
-                single_output_color = output_colors.pop()
-            elif single_output_color != output_colors.pop():
-                single_output_color = None
-
-        if all_inputs_only_two_by_twos:
-            two_by_two_uni_ray_direction_by_color = (
-                get_two_by_two_uni_ray_direction_by_color(input_shapes, output_grid)
-            )
-
-        example_observations.append(
-            ExampleObservations(
-                input_grid=input_grid,
-                output_grid=output_grid,
-                opposing_same_color_single_cells=opposing_same_color_single_cells,
-                enclosed_zero_shapes=enclosed_zero_shapes,
-                non_enclosed_zero_shapes=non_enclosed_zero_shapes,
-                input_square_abstraction=input_square_abstraction,
-                input_square_abstraction_color=input_square_abstraction_color
-                if input_square_abstraction
-                else None,
-                input_shape_count=len(input_shapes),
-                output_colors=output_colors,
-                output_colors_count=output_colors_count,
-                new_output_colors=new_output_colors,
-                new_output_colors_count=new_output_colors_count,
-                input_shapes=input_shapes,
-                output_shapes=get_shapes(output_grid),
-                input_only_two_by_twos=all_inputs_only_two_by_twos,
-                two_by_two_uni_ray_direction_by_color=two_by_two_uni_ray_direction_by_color
-                if all_inputs_only_two_by_twos
-                else None,
-                input_cell_count_by_color=input_cell_count_by_color,
-                output_cell_count_by_color=output_cell_count_by_color,
-                cell_count_by_color_identical=cell_count_by_color_identical,
-                spaceship_shape=spaceship_shape,
-                output_twice_as_large_as_input=output_twice_as_large_as_input,
-            )
-        )
-
-    test_shapes = get_shapes(test_input)
-    test_input_square_abstraction = get_square_abstraction(test_shapes)
-    test_opposing_same_color_single_cells = _collect_opposing_same_color_single_cells(
-        test_shapes
-    )
-    test_zero_shapes = _get_zero_shapes(test_input)
-    test_input_colors = set(np.unique(test_input)) - {0}
-    test_input_cell_count_by_color = {
-        color: int(np.sum(test_input == color)) for color in test_input_colors
-    }
-    test_spaceship_shape = _check_spaceship_shape(test_shapes, test_input)
-
-    test_observations = ExampleObservations(
-        input_grid=test_input,
-        input_shape_count=len(test_shapes),
-        enclosed_zero_shapes=_get_enclosed_shapes(test_zero_shapes, test_input.shape),
-        non_enclosed_zero_shapes=_get_non_enclosed_shapes(
-            test_zero_shapes, test_input.shape
-        ),
-        output_colors=set(),
-        output_colors_count=0,
-        new_output_colors=set(),
-        new_output_colors_count=0,
-        opposing_same_color_single_cells=test_opposing_same_color_single_cells,
-        input_shapes=test_shapes,
-        output_shapes=[],
-        input_square_abstraction=test_input_square_abstraction,
-        input_square_abstraction_color=test_input_square_abstraction.color
-        if test_input_square_abstraction
-        else None,
-        input_cell_count_by_color=test_input_cell_count_by_color,
-        spaceship_shape=test_spaceship_shape,
-    )
-
+def make_empty_observations(examples: list, test_input: Grid) -> "Observations":
+    example_observations = [
+        ExampleObservations(input_grid=inp, output_grid=out)
+        for inp, out in examples
+    ]
+    test_observations = ExampleObservations(input_grid=test_input)
     return Observations(
-        input_square_abstraction_everywhere=all(
-            obs.input_square_abstraction_color is not None
-            for obs in example_observations
-        ),
-        has_opposing_same_color_single_cells_everywhere=all(
-            obs.opposing_same_color_single_cells for obs in example_observations
-        )
-        and test_observations.opposing_same_color_single_cells,
-        all_inputs_empty=all(
-            example_observations[i].input_shape_count == 0 for i in range(len(examples))
-        ),
-        single_output_color=single_output_color,
-        grid_size_stays_identical=all(
-            input_grid.shape == output_grid.shape
-            for input_grid, output_grid in examples
-        ),
-        grid_size_decreases=any(
-            input_grid.size > output_grid.size for input_grid, output_grid in examples
-        ),
-        single_shape_everywhere=all(
-            len(obs.input_shapes) == 1 and len(obs.output_shapes) == 1
-            for obs in example_observations
-        ),
-        all_inputs_only_two_by_twos=all(
-            obs.input_only_two_by_twos for obs in example_observations
-        ),
-        consistent_two_by_two_uni_ray_direction_by_color=(
-            example_observations[0].two_by_two_uni_ray_direction_by_color
-            if all(
-                obs.two_by_two_uni_ray_direction_by_color
-                == example_observations[0].two_by_two_uni_ray_direction_by_color
-                for obs in example_observations
-            )
-            else None
-        ),
-        consistent_new_output_colors=(
-            example_observations[0].new_output_colors
-            if all(
-                obs.new_output_colors == example_observations[0].new_output_colors
-                for obs in example_observations
-            )
-            else None
-        ),
-        two_new_output_colors_everywhere=all(
-            obs.new_output_colors_count == 2 for obs in example_observations
-        ),
-        enclosed_zero_shapes_everywhere=all(
-            len(obs.enclosed_zero_shapes) > 0 for obs in example_observations
-        ),
-        non_enclosed_zero_shapes_everywhere=all(
-            len(obs.non_enclosed_zero_shapes) > 0 for obs in example_observations
-        ),
         example_observations=example_observations,
         test_observations=test_observations,
-        cell_count_by_color_identical_everywhere=all(
-            obs.cell_count_by_color_identical for obs in example_observations
-        ),
-        has_spaceship_shape_everywhere=all(
-            obs.spaceship_shape is not None for obs in example_observations
-        )
-        and test_observations.spaceship_shape is not None,
-        all_outputs_twice_as_large_as_inputs=all(
-            obs.output_twice_as_large_as_input for obs in example_observations
-        ),
     )
+
+
+def check_grid_sizes(obs: Observations) -> None:
+    examples = obs.example_observations
+    obs.grid_size_stays_identical = all(
+        ex.input_grid.shape == ex.output_grid.shape for ex in examples
+    )
+    obs.grid_size_decreases = any(
+        ex.input_grid.size > ex.output_grid.size for ex in examples
+    )
+
+
+def collect_shapes(obs: Observations) -> None:
+    for ex in obs.example_observations:
+        ex.input_shapes = get_shapes(ex.input_grid)
+        ex.input_shape_count = len(ex.input_shapes)
+        ex.output_shapes = get_shapes(ex.output_grid)
+
+    test = obs.test_observations
+    test.input_shapes = get_shapes(test.input_grid)
+    test.input_shape_count = len(test.input_shapes)
+
+    obs.single_shape_everywhere = all(
+        len(ex.input_shapes) == 1 and len(ex.output_shapes) == 1
+        for ex in obs.example_observations
+    )
+    obs.all_inputs_empty = all(
+        ex.input_shape_count == 0 for ex in obs.example_observations
+    )
+
+
+def check_output_size_ratio(obs: Observations) -> None:
+    for ex in obs.example_observations:
+        ex.output_twice_as_large_as_input = (
+            ex.output_grid.shape[0] == 2 * ex.input_grid.shape[0]
+            and ex.output_grid.shape[1] == 2 * ex.input_grid.shape[1]
+        )
+    obs.all_outputs_twice_as_large_as_inputs = all(
+        ex.output_twice_as_large_as_input for ex in obs.example_observations
+    )
+
+
+def check_color_sets(obs: Observations) -> None:
+    single_output_color = None
+    first = True
+
+    for ex in obs.example_observations:
+        input_colors = set(np.unique(ex.input_grid)) - {0}
+        output_colors = set(np.unique(ex.output_grid)) - {0}
+        ex.output_colors = output_colors
+        ex.output_colors_count = len(output_colors)
+        ex.new_output_colors = output_colors - input_colors
+        ex.new_output_colors_count = len(ex.new_output_colors)
+
+        if ex.output_colors_count == 1:
+            color = next(iter(output_colors))
+            if first:
+                single_output_color = color
+                first = False
+            elif single_output_color != color:
+                single_output_color = None
+        else:
+            single_output_color = None
+            first = False
+
+    obs.single_output_color = single_output_color
+    obs.two_new_output_colors_everywhere = all(
+        ex.new_output_colors_count == 2 for ex in obs.example_observations
+    )
+    examples = obs.example_observations
+    obs.consistent_new_output_colors = (
+        examples[0].new_output_colors
+        if all(
+            ex.new_output_colors == examples[0].new_output_colors
+            for ex in examples
+        )
+        else None
+    )
+
+
+def check_zero_shapes(obs: Observations) -> None:
+    for ex in obs.example_observations:
+        zero_shapes = _get_zero_shapes(ex.input_grid)
+        ex.enclosed_zero_shapes = _get_enclosed_shapes(zero_shapes, ex.input_grid.shape)
+        ex.non_enclosed_zero_shapes = _get_non_enclosed_shapes(zero_shapes, ex.input_grid.shape)
+
+    test = obs.test_observations
+    test_zero_shapes = _get_zero_shapes(test.input_grid)
+    test.enclosed_zero_shapes = _get_enclosed_shapes(test_zero_shapes, test.input_grid.shape)
+    test.non_enclosed_zero_shapes = _get_non_enclosed_shapes(test_zero_shapes, test.input_grid.shape)
+
+    obs.enclosed_zero_shapes_everywhere = all(
+        len(ex.enclosed_zero_shapes) > 0 for ex in obs.example_observations
+    )
+    obs.non_enclosed_zero_shapes_everywhere = all(
+        len(ex.non_enclosed_zero_shapes) > 0 for ex in obs.example_observations
+    )
+
+
+def check_cell_counts(obs: Observations) -> None:
+    for ex in obs.example_observations:
+        input_colors = set(np.unique(ex.input_grid)) - {0}
+        output_colors = set(np.unique(ex.output_grid)) - {0}
+        ex.input_cell_count_by_color = {
+            color: int(np.sum(ex.input_grid == color)) for color in input_colors
+        }
+        ex.output_cell_count_by_color = {
+            color: int(np.sum(ex.output_grid == color)) for color in output_colors
+        }
+        ex.cell_count_by_color_identical = (
+            ex.input_cell_count_by_color == ex.output_cell_count_by_color
+        )
+
+    test = obs.test_observations
+    test_input_colors = set(np.unique(test.input_grid)) - {0}
+    test.input_cell_count_by_color = {
+        color: int(np.sum(test.input_grid == color)) for color in test_input_colors
+    }
+
+    obs.cell_count_by_color_identical_everywhere = all(
+        ex.cell_count_by_color_identical for ex in obs.example_observations
+    )
+
+
+def check_square_abstraction(obs: Observations) -> None:
+    for ex in obs.example_observations:
+        ex.input_square_abstraction = get_square_abstraction(ex.input_shapes)
+        ex.input_square_abstraction_color = (
+            ex.input_square_abstraction.color if ex.input_square_abstraction else None
+        )
+
+    test = obs.test_observations
+    test.input_square_abstraction = get_square_abstraction(test.input_shapes)
+    test.input_square_abstraction_color = (
+        test.input_square_abstraction.color if test.input_square_abstraction else None
+    )
+
+    obs.input_square_abstraction_everywhere = all(
+        ex.input_square_abstraction_color is not None
+        for ex in obs.example_observations
+    )
+
+
+def check_opposing_cells(obs: Observations) -> None:
+    for ex in obs.example_observations:
+        ex.opposing_same_color_single_cells = (
+            _collect_opposing_same_color_single_cells(ex.input_shapes)
+        )
+
+    test = obs.test_observations
+    test.opposing_same_color_single_cells = (
+        _collect_opposing_same_color_single_cells(test.input_shapes)
+    )
+
+    obs.has_opposing_same_color_single_cells_everywhere = (
+        all(ex.opposing_same_color_single_cells for ex in obs.example_observations)
+        and bool(test.opposing_same_color_single_cells)
+    )
+
+
+def check_spaceship(obs: Observations) -> None:
+    for ex in obs.example_observations:
+        ex.spaceship_shape = _check_spaceship_shape(ex.input_shapes, ex.input_grid)
+
+    test = obs.test_observations
+    test.spaceship_shape = _check_spaceship_shape(test.input_shapes, test.input_grid)
+
+    obs.has_spaceship_shape_everywhere = (
+        all(ex.spaceship_shape is not None for ex in obs.example_observations)
+        and test.spaceship_shape is not None
+    )
+
+
+def check_two_by_two_rays(obs: Observations) -> None:
+    for ex in obs.example_observations:
+        ex.input_only_two_by_twos = all(s.is_two_by_two for s in ex.input_shapes)
+        if ex.input_only_two_by_twos:
+            ex.two_by_two_uni_ray_direction_by_color = (
+                get_two_by_two_uni_ray_direction_by_color(ex.input_shapes, ex.output_grid)
+            )
+
+    obs.all_inputs_only_two_by_twos = all(
+        ex.input_only_two_by_twos for ex in obs.example_observations
+    )
+    examples = obs.example_observations
+    obs.consistent_two_by_two_uni_ray_direction_by_color = (
+        examples[0].two_by_two_uni_ray_direction_by_color
+        if obs.all_inputs_only_two_by_twos and all(
+            ex.two_by_two_uni_ray_direction_by_color
+            == examples[0].two_by_two_uni_ray_direction_by_color
+            for ex in examples
+        )
+        else None
+    )
+
+
+OBSERVATION_CHECKS: list[ObservationCheck] = [
+    check_grid_sizes,
+    collect_shapes,
+    check_output_size_ratio,
+    check_color_sets,
+    check_zero_shapes,
+    check_cell_counts,
+    check_square_abstraction,
+    check_opposing_cells,
+    check_spaceship,
+    check_two_by_two_rays,
+]
+
+
+# ---------------------------------------------------------------------------
+# Backward-compatible wrapper
+# ---------------------------------------------------------------------------
+
+def observe(examples: list, test_input: Grid) -> Observations:
+    obs = make_empty_observations(examples, test_input)
+    for check in OBSERVATION_CHECKS:
+        check(obs)
+    return obs
