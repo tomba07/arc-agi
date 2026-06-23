@@ -2,7 +2,7 @@ import numpy as np
 
 from ArcProblem import ArcProblem
 from Transformations import Theory, apply_theory
-from Observations import make_empty_observations, OBSERVATION_CHECKS
+from Observations import initialize_observations, OBSERVATION_CHECKS
 from Theories import get_theories
 
 
@@ -35,7 +35,7 @@ class ArcAgent:
         examples = self._extract_simplified_examples(arc_problem)
         test_input = arc_problem.test_set().get_input_data().data()
 
-        obs = make_empty_observations(examples, test_input)
+        obs = initialize_observations(examples, test_input)
         tested_theories: set[tuple] = set()
 
         for check in OBSERVATION_CHECKS:

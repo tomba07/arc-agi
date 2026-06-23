@@ -405,7 +405,7 @@ def _check_ray_from_location(
 ObservationCheck = Callable[["Observations"], None]
 
 
-def make_empty_observations(examples: list, test_input: Grid) -> "Observations":
+def initialize_observations(examples: list, test_input: Grid) -> "Observations":
     example_observations = [
         ExampleObservations(input_grid=inp, output_grid=out)
         for inp, out in examples
@@ -630,7 +630,7 @@ OBSERVATION_CHECKS: list[ObservationCheck] = [
 # ---------------------------------------------------------------------------
 
 def observe(examples: list, test_input: Grid) -> Observations:
-    obs = make_empty_observations(examples, test_input)
+    obs = initialize_observations(examples, test_input)
     for check in OBSERVATION_CHECKS:
         check(obs)
     return obs
