@@ -43,6 +43,7 @@ class ExampleObservations:
     input_cell_count_by_color: dict[int, int] = None
     output_cell_count_by_color: dict[int, int] = None
     cell_count_by_color_identical: bool = None
+    opposing_same_color_single_cells: list[tuple[Shape, Shape]] = None
 
 
 @dataclass
@@ -63,6 +64,7 @@ class Observations:
     enclosed_zero_shapes_everywhere: bool = False
     non_enclosed_zero_shapes_everywhere: bool = False
     cell_count_by_color_identical_everywhere: bool = None
+    has_opposing_same_color_single_cells_everywhere: bool = False
 
 
 def _collect_cells(
@@ -115,6 +117,21 @@ def get_shapes(grid: Grid) -> list[Shape]:
             shapes.append(_make_shape(cells_info.cells, cells_info.color))
 
     return shapes
+
+#The shapes have to be at a border of the grid and have to have an opposing shape of the same color on the opposite side of the grid. The shapes have to be single cells (1x1).
+def _collect_opposing_same_color_single_cells(shapes: list[Shape]) -> list[tuple[Shape, Shape]]:
+    single_cell_shapes = [shape for shape in shapes if shape.width == 1 and shape.height == 1]
+    opposing_pairs = []
+    for i, shape1 in enumerate(single_cell_shapes):
+        for j, shape2 in enumerate(single_cell_shapes):
+            if i >= j:
+                continue
+            if shape1.color == shape2.color:
+                left_right = (shape1.col == 0 and shape2.col == max(shape1.col, shape2.col)) or (shape1.col == max(shape1.col, shape2.col) and shape2.col == 0)
+                top_bottom = (shape1.row == 0 and shape2.row == max(shape1.row, shape2.row)) or (shape1.row == max(shape1.row, shape2.row) and shape2.row == 0)
+                if left_right or top_bottom:
+                    opposing_pairs.append((shape1, shape2))
+    return opposing_pairs
 
 def _collect_zero_cells(
     grid: Grid, start_row: int, start_col: int, visited: set
@@ -274,6 +291,7 @@ def observe(examples: list, test_input: Grid) -> Observations:
     for input_grid, output_grid in examples:
         input_shapes = get_shapes(input_grid)
         zero_shapes = _get_zero_shapes(input_grid)
+        opposing_same_color_single_cells = _collect_opposing_same_color_single_cells(input_shapes)
         enclosed_zero_shapes = _get_enclosed_shapes(zero_shapes, input_grid.shape)
         non_enclosed_zero_shapes = _get_non_enclosed_shapes(zero_shapes, input_grid.shape)
         input_square_abstraction = get_square_abstraction(input_shapes)
@@ -305,6 +323,7 @@ def observe(examples: list, test_input: Grid) -> Observations:
             ExampleObservations(
                 input_grid=input_grid,
                 output_grid=output_grid,
+                opposing_same_color_single_cells=opposing_same_color_single_cells,
                 enclosed_zero_shapes=enclosed_zero_shapes,
                 non_enclosed_zero_shapes=non_enclosed_zero_shapes,
                 input_square_abstraction=input_square_abstraction,
@@ -330,6 +349,7 @@ def observe(examples: list, test_input: Grid) -> Observations:
 
     test_shapes = get_shapes(test_input)
     test_input_square_abstraction = get_square_abstraction(test_shapes)
+    test_opposing_same_color_single_cells = _collect_opposing_same_color_single_cells(test_shapes)
     test_zero_shapes = _get_zero_shapes(test_input)
     test_input_colors = set(np.unique(test_input)) - {0}
     test_input_cell_count_by_color = {color: int(np.sum(test_input == color)) for color in test_input_colors}
@@ -343,6 +363,7 @@ def observe(examples: list, test_input: Grid) -> Observations:
         output_colors_count=0,
         new_output_colors=set(),
         new_output_colors_count=0,
+        opposing_same_color_single_cells=test_opposing_same_color_single_cells,
         input_shapes=test_shapes,
         output_shapes=[],
         input_square_abstraction=test_input_square_abstraction,
@@ -357,6 +378,9 @@ def observe(examples: list, test_input: Grid) -> Observations:
             obs.input_square_abstraction_color is not None
             for obs in example_observations
         ),
+        has_opposing_same_color_single_cells_everywhere=all(
+            obs.opposing_same_color_single_cells for obs in example_observations
+        ) and test_observations.opposing_same_color_single_cells,
         all_inputs_empty=all(
             example_observations[i].input_shape_count == 0 for i in range(len(examples))
         ),

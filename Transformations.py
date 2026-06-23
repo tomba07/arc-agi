@@ -281,3 +281,31 @@ def make_arrange_colored_cells_transformations(direction: str, increasing: bool 
         return result
 
     return fn
+
+def connect_same_color_opposing_cells(
+    grid: Grid, observations: Observations, example_index: int | None
+) -> Grid:
+    example = (
+        observations.test_observations
+        if example_index is None
+        else observations.example_observations[example_index]
+    )
+    opposing_cells = example.opposing_same_color_single_cells
+
+    if not opposing_cells:
+        return grid  # No opposing cells to connect
+
+    result = grid.copy()
+    for cell1, cell2 in opposing_cells:
+        row1, col1 = cell1.row, cell1.col
+        row2, col2 = cell2.row, cell2.col
+        color = result[row1, col1]
+
+        if row1 == row2:
+            for c in range(min(col1, col2), max(col1, col2) + 1):
+                result[row1, c] = color
+        elif col1 == col2:
+            for r in range(min(row1, row2), max(row1, row2) + 1):
+                result[r, col1] = color
+
+    return result

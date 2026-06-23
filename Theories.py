@@ -1,6 +1,7 @@
 from Transformations import (
     Theory,
     cast_uni_ray_from_two_by_twos,
+    connect_same_color_opposing_cells,
     crop_to_square_abstraction,
     make_spiral_transformation,
     make_recolor_transformation,
@@ -59,6 +60,8 @@ def get_theories(observations: Observations) -> list[Theory]:
         for direction in directions:
             theories.append([make_arrange_colored_cells_transformations(direction, True)])
             theories.append([make_arrange_colored_cells_transformations(direction, False)])
+    if observations.has_opposing_same_color_single_cells_everywhere:
+        theories.append([connect_same_color_opposing_cells])
     # if observations.grid_size_stays_identical:
     #     theories.extend(SAME_SIZE_THEORIES)
     # if observations.grid_size_decreases:
