@@ -226,14 +226,14 @@ def cast_uni_ray_from_two_by_twos(
 
 
 def make_recolor_by_enclosure_transformation(flip_colors: bool = False) -> Transform:
-    def fn(
-        grid: Grid, observations: Observations, example_index: int | None
-    ) -> Grid:
+    def fn(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
         colors = observations.consistent_new_output_colors
         if colors is None or len(colors) != 2:
             return grid
         color_a, color_b = sorted(colors)
-        enclosed_color, non_enclosed_color = (color_b, color_a) if flip_colors else (color_a, color_b)
+        enclosed_color, non_enclosed_color = (
+            (color_b, color_a) if flip_colors else (color_a, color_b)
+        )
         example = (
             observations.test_observations
             if example_index is None
@@ -250,10 +250,11 @@ def make_recolor_by_enclosure_transformation(flip_colors: bool = False) -> Trans
 
     return fn
 
-def make_arrange_colored_cells_transformations(direction: str, increasing: bool = True) -> Transform:
-    def fn(
-        grid: Grid, observations: Observations, example_index: int | None
-    ) -> Grid:
+
+def make_arrange_colored_cells_transformations(
+    direction: str, increasing: bool = True
+) -> Transform:
+    def fn(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
         example = (
             observations.test_observations
             if example_index is None
@@ -263,21 +264,22 @@ def make_arrange_colored_cells_transformations(direction: str, increasing: bool 
 
         if cell_count_by_color is None:
             return grid
-        
+
         rows = None
         cols = None
 
-        if (direction == "horizontal"):
+        if direction == "horizontal":
             rows = len(cell_count_by_color)
             cols = max(cell_count_by_color.values())
-        elif (direction == "vertical"):
+        elif direction == "vertical":
             cols = len(cell_count_by_color)
             rows = max(cell_count_by_color.values())
 
-
         result = np.zeros((rows, cols), dtype=int)
-        
-        sorted_colors = sorted(cell_count_by_color.items(), key=lambda x: x[1], reverse=not increasing)
+
+        sorted_colors = sorted(
+            cell_count_by_color.items(), key=lambda x: x[1], reverse=not increasing
+        )
         for i, (color, count) in enumerate(sorted_colors):
             if direction == "horizontal":
                 result[i, :count] = color
@@ -287,6 +289,7 @@ def make_arrange_colored_cells_transformations(direction: str, increasing: bool 
         return result
 
     return fn
+
 
 def connect_same_color_opposing_cells(
     grid: Grid, observations: Observations, example_index: int | None
@@ -315,6 +318,7 @@ def connect_same_color_opposing_cells(
                 result[r, col1] = color
 
     return result
+
 
 def create_beam_from_spaceship_tip(
     grid: Grid, observations: Observations, example_index: int | None
@@ -349,9 +353,65 @@ def create_beam_from_spaceship_tip(
 
     return result
 
+
 def mirror_horizontally_and_vertically(
     grid: Grid, observations: Observations, example_index: int | None
 ) -> Grid:
     top = np.hstack([grid, np.fliplr(grid)])
     bottom = np.hstack([np.flipud(grid), np.flipud(np.fliplr(grid))])
     return np.vstack([top, bottom])
+
+
+def make_logical_operation_on_divided_input_transformations(
+    operation: str,
+) -> Transform:
+
+    def fn(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
+        return logical_operation_on_divided_input(
+            grid, observations, example_index, operation
+        )
+
+    return fn
+
+
+def logical_operation_on_divided_input(
+    grid: Grid, observations: Observations, example_index: int | None, operation: str
+) -> Grid:
+    example = (
+        observations.test_observations
+        if example_index is None
+        else observations.example_observations[example_index]
+    )
+    if not example.single_horizontal_divider and not example.single_vertical_divider:
+        return grid  # No divider to perform logical operation on
+
+    if example.single_horizontal_divider:
+        mid_row = grid.shape[0] // 2
+        top_half = grid[:mid_row, :]
+        bottom_half = grid[mid_row + 1:, :]
+        return _perform_logical_operation(top_half, bottom_half, operation, observations.single_output_color or 3)
+    else:
+        mid_col = grid.shape[1] // 2
+        left_half = grid[:, :mid_col]
+        right_half = grid[:, mid_col + 1:]
+        return _perform_logical_operation(left_half, right_half, operation, observations.single_output_color or 3)
+
+
+def _perform_logical_operation(grid1: Grid, grid2: Grid, operation: str, output_color: int) -> Grid:
+    a = grid1 != 0
+    b = grid2 != 0
+    if operation == "AND":
+        mask = a & b
+    elif operation == "OR":
+        mask = a | b
+    elif operation == "XOR":
+        mask = a ^ b
+    elif operation == "NAND":
+        mask = ~(a & b)
+    elif operation == "NOR":
+        mask = ~(a | b)
+    elif operation == "XNOR":
+        mask = ~(a ^ b)
+    else:
+        raise ValueError(f"Unsupported logical operation: {operation}")
+    return np.where(mask, output_color, 0)

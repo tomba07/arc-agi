@@ -88,7 +88,7 @@ MS C
 74dd1130: rotate & mirror
  - obs: same size
  - theory: transpose
-3428a4f5: v divider & xor
+3428a4f5: v divider & xor & color change
 b2862040: enclosing shapes color change
 bbc9ae5d: half height of width, growing fill
 cf98881b: h dividers & right to left overlay
