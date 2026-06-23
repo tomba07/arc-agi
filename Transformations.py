@@ -309,3 +309,36 @@ def connect_same_color_opposing_cells(
                 result[r, col1] = color
 
     return result
+
+def create_beam_from_spaceship_tip(
+    grid: Grid, observations: Observations, example_index: int | None
+) -> Grid:
+    example = (
+        observations.test_observations
+        if example_index is None
+        else observations.example_observations[example_index]
+    )
+    spaceship_shape = example.spaceship_shape
+
+    if spaceship_shape is None:
+        return grid  # No spaceship shape to create a beam from
+
+    result = grid.copy()
+    tip_row, tip_col = spaceship_shape.tip_row, spaceship_shape.tip_col
+    direction = spaceship_shape.direction
+    color = spaceship_shape.beam_color
+
+    if direction == "up":
+        for r in range(tip_row - 1, -1, -1):
+            result[r, tip_col] = color
+    elif direction == "down":
+        for r in range(tip_row + 1, result.shape[0]):
+            result[r, tip_col] = color
+    elif direction == "left":
+        for c in range(tip_col - 1, -1, -1):
+            result[tip_row, c] = color
+    elif direction == "right":
+        for c in range(tip_col + 1, result.shape[1]):
+            result[tip_row, c] = color
+
+    return result

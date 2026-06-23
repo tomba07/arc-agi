@@ -22,6 +22,14 @@ class Shape:
     color: int = None
     is_two_by_two: bool = False
 
+#inherits from Shape
+@dataclass
+class Spaceship_Shape(Shape):
+    is_spaceship_shape: bool = True
+    beam_color: int = None
+    direction: str = None  # "up", "down", "left", "right"
+    tip_row: int = None
+    tip_col: int = None
 
 @dataclass
 class ExampleObservations:
@@ -44,6 +52,7 @@ class ExampleObservations:
     output_cell_count_by_color: dict[int, int] = None
     cell_count_by_color_identical: bool = None
     opposing_same_color_single_cells: list[tuple[Shape, Shape]] = None
+    spaceship_shape: Spaceship_Shape = None
 
 
 @dataclass
@@ -65,6 +74,7 @@ class Observations:
     non_enclosed_zero_shapes_everywhere: bool = False
     cell_count_by_color_identical_everywhere: bool = None
     has_opposing_same_color_single_cells_everywhere: bool = False
+    has_spaceship_shape_everywhere: bool = False
 
 
 def _collect_cells(
@@ -118,20 +128,135 @@ def get_shapes(grid: Grid) -> list[Shape]:
 
     return shapes
 
-#The shapes have to be at a border of the grid and have to have an opposing shape of the same color on the opposite side of the grid. The shapes have to be single cells (1x1).
-def _collect_opposing_same_color_single_cells(shapes: list[Shape]) -> list[tuple[Shape, Shape]]:
-    single_cell_shapes = [shape for shape in shapes if shape.width == 1 and shape.height == 1]
+def _check_spaceship_shape(shapes: list[Shape], grid: Grid) -> Shape | None:
+    directions = ["up", "down", "left", "right"]
+    
+    #we only accept a single spaceship shape in the grid
+    if len(shapes) != 1:
+        return None
+    else:
+        shape = shapes[0]
+        height = shape.height
+        width = shape.width
+        #it could also be turned 90 degrees
+        ratio_correct = width == height * 2 - 1 or height == width * 2 - 1
+        
+        #check if pyramid shape
+        if ratio_correct:
+            #check up facing
+            for direction in directions:
+                beam_color = _check_pyramid_shape(shape, grid, direction)
+                if beam_color is not None:
+                    tip_row = shape.row if direction == "up" else shape.row + shape.height - 1 if direction == "down" else shape.row + shape.height // 2
+                    tip_col = shape.col + shape.width // 2 if direction in ["up", "down"] else shape.col if direction == "left" else shape.col + shape.width - 1
+                    return Spaceship_Shape(
+                        row=shape.row,
+                        col=shape.col,
+                        width=shape.width,
+                        height=shape.height,
+                        cells=shape.cells,
+                        color=shape.color,
+                        is_spaceship_shape=True,
+                        direction=direction,
+                        beam_color=beam_color,
+                        tip_row=tip_row,
+                        tip_col=tip_col
+                    )
+    return None
+
+def _check_pyramid_shape(shape: Shape, grid: Grid, direction: str) -> bool:
+    beam_color = None
+    
+    if direction == "up":
+        for i in range(shape.height):
+            row = shape.row + i
+            start_col = shape.col + (shape.width // 2) - i
+            end_col = shape.col + (shape.width // 2) + i
+            for col in range(start_col, end_col + 1):
+                if grid[row, col] != shape.color:
+                    return False
+        #check center bottom cell color (beam color)
+        center_bottom_row = shape.row + shape.height - 1
+        center_bottom_col = shape.col + (shape.width // 2)
+        beam_color = grid[center_bottom_row, center_bottom_col]
+        if beam_color == shape.color:
+            return False
+        else:
+            beam_color = beam_color
+    elif direction == "down":
+        for i in range(shape.height):
+            row = shape.row + (shape.height - 1) - i
+            start_col = shape.col + (shape.width // 2) - i
+            end_col = shape.col + (shape.width // 2) + i
+            for col in range(start_col, end_col + 1):
+                if grid[row, col] != shape.color:
+                    return False
+        #check center top cell color
+        center_top_row = shape.row
+        center_top_col = shape.col + (shape.width // 2)
+        beam_color = grid[center_top_row, center_top_col]
+        if beam_color == shape.color:
+            return False
+        else:
+            beam_color = beam_color
+    elif direction == "left":
+        for i in range(shape.width):
+            col = shape.col + i
+            start_row = shape.row + (shape.height // 2) - i
+            end_row = shape.row + (shape.height // 2) + i
+            for row in range(start_row, end_row + 1):
+                if grid[row, col] != shape.color:
+                    return False
+        #check center right cell color
+        center_right_row = shape.row + (shape.height // 2)
+        center_right_col = shape.col + shape.width - 1
+        beam_color = grid[center_right_row, center_right_col]
+        if beam_color == shape.color:
+            return False
+        else:
+            beam_color = beam_color
+    elif direction == "right":
+        for i in range(shape.width):
+            col = shape.col + (shape.width - 1) - i
+            start_row = shape.row + (shape.height // 2) - i
+            end_row = shape.row + (shape.height // 2) + i
+            for row in range(start_row, end_row + 1):
+                if grid[row, col] != shape.color:
+                    return False
+        #check center left cell color
+        center_left_row = shape.row + (shape.height // 2)
+        center_left_col = shape.col
+        beam_color = grid[center_left_row, center_left_col]
+        if beam_color == shape.color:
+            return False
+        else:
+            beam_color = beam_color
+    
+    return beam_color
+
+# The shapes have to be at a border of the grid and have to have an opposing shape of the same color on the opposite side of the grid. The shapes have to be single cells (1x1).
+def _collect_opposing_same_color_single_cells(
+    shapes: list[Shape],
+) -> list[tuple[Shape, Shape]]:
+    single_cell_shapes = [
+        shape for shape in shapes if shape.width == 1 and shape.height == 1
+    ]
     opposing_pairs = []
     for i, shape1 in enumerate(single_cell_shapes):
         for j, shape2 in enumerate(single_cell_shapes):
             if i >= j:
                 continue
             if shape1.color == shape2.color:
-                left_right = (shape1.col == 0 and shape2.col == max(shape1.col, shape2.col)) or (shape1.col == max(shape1.col, shape2.col) and shape2.col == 0)
-                top_bottom = (shape1.row == 0 and shape2.row == max(shape1.row, shape2.row)) or (shape1.row == max(shape1.row, shape2.row) and shape2.row == 0)
+                left_right = (
+                    shape1.col == 0 and shape2.col == max(shape1.col, shape2.col)
+                ) or (shape1.col == max(shape1.col, shape2.col) and shape2.col == 0)
+                top_bottom = (
+                    shape1.row == 0 and shape2.row == max(shape1.row, shape2.row)
+                ) or (shape1.row == max(shape1.row, shape2.row) and shape2.row == 0)
                 if left_right or top_bottom:
                     opposing_pairs.append((shape1, shape2))
     return opposing_pairs
+
 
 def _collect_zero_cells(
     grid: Grid, start_row: int, start_col: int, visited: set
@@ -164,19 +289,21 @@ def _get_zero_shapes(grid: Grid) -> list[Shape]:
 
     return zero_shapes
 
-def _get_enclosed_shapes(shapes: list[Shape], grid_shape: tuple[int, int]) -> list[Shape]:
+
+def _get_enclosed_shapes(
+    shapes: list[Shape], grid_shape: tuple[int, int]
+) -> list[Shape]:
     max_row, max_col = grid_shape[0] - 1, grid_shape[1] - 1
     enclosed_shapes = []
     for shape in shapes:
-        if all(
-            0 < row < max_row and 0 < col < max_col
-            for row, col in shape.cells
-        ):
+        if all(0 < row < max_row and 0 < col < max_col for row, col in shape.cells):
             enclosed_shapes.append(shape)
     return enclosed_shapes
 
 
-def _get_non_enclosed_shapes(shapes: list[Shape], grid_shape: tuple[int, int]) -> list[Shape]:
+def _get_non_enclosed_shapes(
+    shapes: list[Shape], grid_shape: tuple[int, int]
+) -> list[Shape]:
     max_row, max_col = grid_shape[0] - 1, grid_shape[1] - 1
     non_enclosed_shapes = []
     for shape in shapes:
@@ -291,9 +418,13 @@ def observe(examples: list, test_input: Grid) -> Observations:
     for input_grid, output_grid in examples:
         input_shapes = get_shapes(input_grid)
         zero_shapes = _get_zero_shapes(input_grid)
-        opposing_same_color_single_cells = _collect_opposing_same_color_single_cells(input_shapes)
+        opposing_same_color_single_cells = _collect_opposing_same_color_single_cells(
+            input_shapes
+        )
         enclosed_zero_shapes = _get_enclosed_shapes(zero_shapes, input_grid.shape)
-        non_enclosed_zero_shapes = _get_non_enclosed_shapes(zero_shapes, input_grid.shape)
+        non_enclosed_zero_shapes = _get_non_enclosed_shapes(
+            zero_shapes, input_grid.shape
+        )
         input_square_abstraction = get_square_abstraction(input_shapes)
         input_colors = set(np.unique(input_grid)) - {0}
         output_colors = set(np.unique(output_grid)) - {0}
@@ -301,9 +432,16 @@ def observe(examples: list, test_input: Grid) -> Observations:
         new_output_colors = output_colors - input_colors
         new_output_colors_count = len(new_output_colors)
         all_inputs_only_two_by_twos = all(shape.is_two_by_two for shape in input_shapes)
-        input_cell_count_by_color = {color: np.sum(input_grid == color) for color in input_colors}
-        output_cell_count_by_color = {color: np.sum(output_grid == color) for color in output_colors}   
-        cell_count_by_color_identical = input_cell_count_by_color == output_cell_count_by_color
+        input_cell_count_by_color = {
+            color: np.sum(input_grid == color) for color in input_colors
+        }
+        output_cell_count_by_color = {
+            color: np.sum(output_grid == color) for color in output_colors
+        }
+        cell_count_by_color_identical = (
+            input_cell_count_by_color == output_cell_count_by_color
+        )
+        spaceship_shape = _check_spaceship_shape(input_shapes, input_grid)
 
         if input_square_abstraction:
             input_square_abstraction_color = input_square_abstraction.color
@@ -344,21 +482,29 @@ def observe(examples: list, test_input: Grid) -> Observations:
                 input_cell_count_by_color=input_cell_count_by_color,
                 output_cell_count_by_color=output_cell_count_by_color,
                 cell_count_by_color_identical=cell_count_by_color_identical,
+                spaceship_shape=spaceship_shape
             )
         )
 
     test_shapes = get_shapes(test_input)
     test_input_square_abstraction = get_square_abstraction(test_shapes)
-    test_opposing_same_color_single_cells = _collect_opposing_same_color_single_cells(test_shapes)
+    test_opposing_same_color_single_cells = _collect_opposing_same_color_single_cells(
+        test_shapes
+    )
     test_zero_shapes = _get_zero_shapes(test_input)
     test_input_colors = set(np.unique(test_input)) - {0}
-    test_input_cell_count_by_color = {color: int(np.sum(test_input == color)) for color in test_input_colors}
+    test_input_cell_count_by_color = {
+        color: int(np.sum(test_input == color)) for color in test_input_colors
+    }
+    test_spaceship_shape = _check_spaceship_shape(test_shapes, test_input)
 
     test_observations = ExampleObservations(
         input_grid=test_input,
         input_shape_count=len(test_shapes),
         enclosed_zero_shapes=_get_enclosed_shapes(test_zero_shapes, test_input.shape),
-        non_enclosed_zero_shapes=_get_non_enclosed_shapes(test_zero_shapes, test_input.shape),
+        non_enclosed_zero_shapes=_get_non_enclosed_shapes(
+            test_zero_shapes, test_input.shape
+        ),
         output_colors=set(),
         output_colors_count=0,
         new_output_colors=set(),
@@ -371,6 +517,7 @@ def observe(examples: list, test_input: Grid) -> Observations:
         if test_input_square_abstraction
         else None,
         input_cell_count_by_color=test_input_cell_count_by_color,
+        spaceship_shape=test_spaceship_shape
     )
 
     return Observations(
@@ -380,7 +527,8 @@ def observe(examples: list, test_input: Grid) -> Observations:
         ),
         has_opposing_same_color_single_cells_everywhere=all(
             obs.opposing_same_color_single_cells for obs in example_observations
-        ) and test_observations.opposing_same_color_single_cells,
+        )
+        and test_observations.opposing_same_color_single_cells,
         all_inputs_empty=all(
             example_observations[i].input_shape_count == 0 for i in range(len(examples))
         ),
@@ -419,11 +567,18 @@ def observe(examples: list, test_input: Grid) -> Observations:
         two_new_output_colors_everywhere=all(
             obs.new_output_colors_count == 2 for obs in example_observations
         ),
-        enclosed_zero_shapes_everywhere=all(len(obs.enclosed_zero_shapes) > 0 for obs in example_observations),
-        non_enclosed_zero_shapes_everywhere=all(len(obs.non_enclosed_zero_shapes) > 0 for obs in example_observations),
+        enclosed_zero_shapes_everywhere=all(
+            len(obs.enclosed_zero_shapes) > 0 for obs in example_observations
+        ),
+        non_enclosed_zero_shapes_everywhere=all(
+            len(obs.non_enclosed_zero_shapes) > 0 for obs in example_observations
+        ),
         example_observations=example_observations,
         test_observations=test_observations,
         cell_count_by_color_identical_everywhere=all(
             obs.cell_count_by_color_identical for obs in example_observations
         ),
+        has_spaceship_shape_everywhere=all(
+            obs.spaceship_shape is not None for obs in example_observations
+        ) and test_observations.spaceship_shape is not None
     )
