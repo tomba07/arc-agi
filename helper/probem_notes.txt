@@ -13,10 +13,6 @@ MS B
  - obs: h-divider,
  - theory: logical operations
 
-0520fde7: h-divider+AND
- - obs: h-divider,
- - theory: logical operations
-
 623ea044: single cell casts rays
  - obs: single colored cell
  - theory: cast rays from cell

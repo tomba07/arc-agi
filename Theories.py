@@ -97,5 +97,5 @@ def get_theories(observations: Observations) -> list[Theory]:
     # if observations.grid_size_decreases:
     #     theories.extend(SIZE_REDUCING_THEORIES)
 
-    # theories.extend(RECOLOR_THEORIES)
+    theories.extend(RECOLOR_THEORIES)
     return theories
