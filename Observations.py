@@ -168,69 +168,65 @@ def _check_pyramid_shape(shape: Shape, grid: Grid, direction: str) -> bool:
     beam_color = None
     
     if direction == "up":
+        tip_col = shape.col + (shape.width // 2)
+        beam_row, beam_col = shape.row + shape.height - 1, tip_col
         for i in range(shape.height):
             row = shape.row + i
             start_col = shape.col + (shape.width // 2) - i
             end_col = shape.col + (shape.width // 2) + i
             for col in range(start_col, end_col + 1):
+                if (row, col) == (beam_row, beam_col):
+                    continue
                 if grid[row, col] != shape.color:
-                    return False
-        #check center bottom cell color (beam color)
-        center_bottom_row = shape.row + shape.height - 1
-        center_bottom_col = shape.col + (shape.width // 2)
-        beam_color = grid[center_bottom_row, center_bottom_col]
+                    return None
+        beam_color = grid[beam_row, beam_col]
         if beam_color == shape.color:
-            return False
-        else:
-            beam_color = beam_color
+            return None
     elif direction == "down":
+        tip_col = shape.col + (shape.width // 2)
+        beam_row, beam_col = shape.row, tip_col
         for i in range(shape.height):
             row = shape.row + (shape.height - 1) - i
             start_col = shape.col + (shape.width // 2) - i
             end_col = shape.col + (shape.width // 2) + i
             for col in range(start_col, end_col + 1):
+                if (row, col) == (beam_row, beam_col):
+                    continue
                 if grid[row, col] != shape.color:
-                    return False
-        #check center top cell color
-        center_top_row = shape.row
-        center_top_col = shape.col + (shape.width // 2)
-        beam_color = grid[center_top_row, center_top_col]
+                    return None
+        beam_color = grid[beam_row, beam_col]
         if beam_color == shape.color:
-            return False
-        else:
-            beam_color = beam_color
+            return None
     elif direction == "left":
+        tip_row = shape.row + (shape.height // 2)
+        beam_row, beam_col = tip_row, shape.col + shape.width - 1
         for i in range(shape.width):
             col = shape.col + i
             start_row = shape.row + (shape.height // 2) - i
             end_row = shape.row + (shape.height // 2) + i
             for row in range(start_row, end_row + 1):
+                if (row, col) == (beam_row, beam_col):
+                    continue
                 if grid[row, col] != shape.color:
-                    return False
-        #check center right cell color
-        center_right_row = shape.row + (shape.height // 2)
-        center_right_col = shape.col + shape.width - 1
-        beam_color = grid[center_right_row, center_right_col]
+                    return None
+        beam_color = grid[beam_row, beam_col]
         if beam_color == shape.color:
-            return False
-        else:
-            beam_color = beam_color
+            return None
     elif direction == "right":
+        tip_row = shape.row + (shape.height // 2)
+        beam_row, beam_col = tip_row, shape.col
         for i in range(shape.width):
             col = shape.col + (shape.width - 1) - i
             start_row = shape.row + (shape.height // 2) - i
             end_row = shape.row + (shape.height // 2) + i
             for row in range(start_row, end_row + 1):
+                if (row, col) == (beam_row, beam_col):
+                    continue
                 if grid[row, col] != shape.color:
-                    return False
-        #check center left cell color
-        center_left_row = shape.row + (shape.height // 2)
-        center_left_col = shape.col
-        beam_color = grid[center_left_row, center_left_col]
+                    return None
+        beam_color = grid[beam_row, beam_col]
         if beam_color == shape.color:
-            return False
-        else:
-            beam_color = beam_color
+            return None
     
     return beam_color
 
