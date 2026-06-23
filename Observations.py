@@ -67,6 +67,7 @@ class Observations:
     test_observations: ExampleObservations
     grid_size_stays_identical: bool = False
     grid_size_decreases: bool = False
+    shapes_collected: bool = False
     single_shape_everywhere: bool = False
     all_inputs_empty: bool = False
     single_output_color: int = None
@@ -84,6 +85,7 @@ class Observations:
     all_outputs_twice_as_large_as_inputs: bool = False
     has_single_horizontal_divider_everywhere: bool = False
     has_single_vertical_divider_everywhere: bool = False
+    input_color_always_zeroed: int | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -448,6 +450,7 @@ def collect_shapes(obs: Observations) -> None:
     obs.all_inputs_empty = all(
         ex.input_shape_count == 0 for ex in obs.example_observations
     )
+    obs.shapes_collected = True
 
 
 def check_output_size_ratio(obs: Observations) -> None:
@@ -667,12 +670,21 @@ def check_dividers(obs: Observations) -> None:
         )
 
 
+def check_zeroed_color(obs: Observations) -> None:
+    input_color_sets = [set(np.unique(ex.input_grid)) - {0} for ex in obs.example_observations]
+    always_in_input = input_color_sets[0].intersection(*input_color_sets[1:])
+    output_color_sets = [set(np.unique(ex.output_grid)) - {0} for ex in obs.example_observations]
+    always_zeroed = always_in_input - set().union(*output_color_sets)
+    obs.input_color_always_zeroed = next(iter(always_zeroed)) if len(always_zeroed) == 1 else None
+
+
 OBSERVATION_CHECKS: list[ObservationCheck] = [
     check_grid_sizes,
     collect_shapes,
     check_output_size_ratio,
     check_dividers,
     check_color_sets,
+    check_zeroed_color,
     check_zero_shapes,
     check_cell_counts,
     check_square_abstraction,

@@ -61,6 +61,10 @@ def get_theories(observations: Observations) -> list[Theory]:
         theories.append([crop_to_content])
     if observations.all_inputs_empty and observations.single_output_color is not None:
         theories.append([make_spiral_transformation(observations.single_output_color)])
+    if observations.input_color_always_zeroed is not None:
+        c = observations.input_color_always_zeroed
+        theories.append([make_recolor_transformation(c, 0)])
+        theories.append([swap_colors, make_recolor_transformation(c, 0)])
     if observations.input_square_abstraction_everywhere:
         theories.append([crop_to_square_abstraction, recolor_to_square_abstraction])
     if observations.consistent_two_by_two_uni_ray_direction_by_color:
@@ -90,12 +94,12 @@ def get_theories(observations: Observations) -> list[Theory]:
         theories.append([create_beam_from_spaceship_tip])
     if observations.all_outputs_twice_as_large_as_inputs:
         theories.append([mirror_horizontally_and_vertically])
-    if observations.grid_size_stays_identical:
+    if observations.grid_size_stays_identical and observations.shapes_collected:
         theories.extend(SAME_SIZE_THEORIES)
     if (observations.has_single_horizontal_divider_everywhere or observations.has_single_vertical_divider_everywhere) and observations.single_output_color is not None:
         theories.extend(DIVIDER_THEORIES)
-    # if observations.grid_size_decreases:
-    #     theories.extend(SIZE_REDUCING_THEORIES)
+    if observations.grid_size_decreases and observations.single_shape_everywhere:
+        theories.extend(SIZE_REDUCING_THEORIES)
 
     theories.extend(RECOLOR_THEORIES)
     return theories
