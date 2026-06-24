@@ -22,6 +22,7 @@ class Shape:
     is_square_abstraction: bool = False
     color: int = None
     is_two_by_two: bool = False
+    encloses_cells: bool = False
 
 
 # inherits from Shape
@@ -59,6 +60,10 @@ class ExampleObservations:
     output_twice_as_large_as_input: bool = False
     single_horizontal_divider: bool = False
     single_vertical_divider: bool = False
+    has_enclosing_shapes: bool = False
+    enclosing_shapes: list[Shape] = field(default_factory=list)
+    input_color_strict_shapes: list[Shape] = field(default_factory=list)
+    output_color_strict_shapes: list[Shape] = field(default_factory=list)
 
 
 @dataclass
@@ -86,6 +91,7 @@ class Observations:
     has_single_horizontal_divider_everywhere: bool = False
     has_single_vertical_divider_everywhere: bool = False
     input_color_always_zeroed: int | None = None
+    has_enclosing_shapes_everywhere: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -142,6 +148,32 @@ def get_shapes(grid: Grid) -> list[Shape]:
             cells_info = _collect_cells(grid, start_row, start_col, visited)
             shapes.append(_make_shape(cells_info.cells, cells_info.color))
 
+    return shapes
+
+
+def get_color_strict_shapes(grid: Grid) -> list[Shape]:
+    """Like get_shapes but each connected same-color region is its own shape."""
+    visited: set[tuple[int, int]] = set()
+    shapes = []
+    for start_row in range(grid.shape[0]):
+        for start_col in range(grid.shape[1]):
+            if (start_row, start_col) in visited:
+                continue
+            color = int(grid[start_row, start_col])
+            cells: set[tuple[int, int]] = set()
+            queue = [(start_row, start_col)]
+            while queue:
+                r, c = queue.pop()
+                if (r, c) in visited or not (
+                    0 <= r < grid.shape[0] and 0 <= c < grid.shape[1]
+                ):
+                    continue
+                if grid[r, c] != color:
+                    continue
+                visited.add((r, c))
+                cells.add((r, c))
+                queue.extend([(r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)])
+            shapes.append(_make_shape(cells, color))
     return shapes
 
 
@@ -438,10 +470,13 @@ def collect_shapes(obs: Observations) -> None:
         ex.input_shapes = get_shapes(ex.input_grid)
         ex.input_shape_count = len(ex.input_shapes)
         ex.output_shapes = get_shapes(ex.output_grid)
+        ex.input_color_strict_shapes = get_color_strict_shapes(ex.input_grid)
+        ex.output_color_strict_shapes = get_color_strict_shapes(ex.output_grid)
 
     test = obs.test_observations
     test.input_shapes = get_shapes(test.input_grid)
     test.input_shape_count = len(test.input_shapes)
+    test.input_color_strict_shapes = get_color_strict_shapes(test.input_grid)
 
     obs.single_shape_everywhere = all(
         len(ex.input_shapes) == 1 and len(ex.output_shapes) == 1
@@ -637,14 +672,12 @@ def check_dividers(obs: Observations) -> None:
         if horizontal_ratio_correct:
             mid_row = input_rows // 2
             ex.single_horizontal_divider = all(
-                ex.input_grid[mid_row, col] != 0
-                for col in range(input_cols)
+                ex.input_grid[mid_row, col] != 0 for col in range(input_cols)
             )
         if vertical_ratio_correct:
             mid_col = input_cols // 2
             ex.single_vertical_divider = all(
-                ex.input_grid[row, mid_col] != 0
-                for row in range(input_rows)
+                ex.input_grid[row, mid_col] != 0 for row in range(input_rows)
             )
 
     obs.has_single_horizontal_divider_everywhere = all(
@@ -659,23 +692,81 @@ def check_dividers(obs: Observations) -> None:
     if obs.has_single_horizontal_divider_everywhere:
         mid_row = test_rows // 2
         test.single_horizontal_divider = all(
-            test.input_grid[mid_row, col] != 0
-            for col in range(test_cols)
+            test.input_grid[mid_row, col] != 0 for col in range(test_cols)
         )
     if obs.has_single_vertical_divider_everywhere:
         mid_col = test_cols // 2
         test.single_vertical_divider = all(
-            test.input_grid[row, mid_col] != 0
-            for row in range(test_rows)
+            test.input_grid[row, mid_col] != 0 for row in range(test_rows)
         )
 
 
 def check_zeroed_color(obs: Observations) -> None:
-    input_color_sets = [set(np.unique(ex.input_grid)) - {0} for ex in obs.example_observations]
+    input_color_sets = [
+        set(np.unique(ex.input_grid)) - {0} for ex in obs.example_observations
+    ]
     always_in_input = input_color_sets[0].intersection(*input_color_sets[1:])
-    output_color_sets = [set(np.unique(ex.output_grid)) - {0} for ex in obs.example_observations]
+    output_color_sets = [
+        set(np.unique(ex.output_grid)) - {0} for ex in obs.example_observations
+    ]
     always_zeroed = always_in_input - set().union(*output_color_sets)
-    obs.input_color_always_zeroed = next(iter(always_zeroed)) if len(always_zeroed) == 1 else None
+    obs.input_color_always_zeroed = (
+        next(iter(always_zeroed)) if len(always_zeroed) == 1 else None
+    )
+
+
+def _shape_encloses_cells(shape: Shape, grid: Grid) -> bool:
+    rows, cols = grid.shape
+    shape_cell_set = shape.cells
+    visited = set()
+    queue = []
+    for r in range(rows):
+        for c in [0, cols - 1]:
+            if (r, c) not in shape_cell_set:
+                queue.append((r, c))
+    for c in range(cols):
+        for r in [0, rows - 1]:
+            if (r, c) not in shape_cell_set:
+                queue.append((r, c))
+    while queue:
+        r, c = queue.pop()
+        if (r, c) in visited:
+            continue
+        if not (0 <= r < rows and 0 <= c < cols):
+            continue
+        if (r, c) in shape_cell_set:
+            continue
+        visited.add((r, c))
+        queue.extend([(r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)])
+    return len(visited) < rows * cols - len(shape_cell_set)
+
+
+def check_enclosing_shapes(obs: Observations) -> None:
+    def _check_example(example_observations: ExampleObservations) -> None:
+        grid = example_observations.input_grid
+        border = np.concatenate(
+            [grid[0, :], grid[-1, :], grid[1:-1, 0], grid[1:-1, -1]]
+        )
+        bg_color = int(np.bincount(border).argmax())
+        for shape in example_observations.input_color_strict_shapes:
+            if shape.color == bg_color:
+                continue
+            if _shape_encloses_cells(shape, grid):
+                example_observations.enclosing_shapes.append(shape)
+                for s in example_observations.input_shapes:
+                    if s.cells & shape.cells:
+                        s.encloses_cells = True
+                example_observations.has_enclosing_shapes = True
+
+    for ex in obs.example_observations:
+        _check_example(ex)
+    _check_example(obs.test_observations)
+
+    if (
+        all(ex.has_enclosing_shapes for ex in obs.example_observations)
+        and obs.test_observations.has_enclosing_shapes
+    ):
+        obs.has_enclosing_shapes_everywhere = True
 
 
 OBSERVATION_CHECKS: list[ObservationCheck] = [
@@ -691,4 +782,5 @@ OBSERVATION_CHECKS: list[ObservationCheck] = [
     check_opposing_cells,
     check_spaceship,
     check_two_by_two_rays,
+    check_enclosing_shapes,
 ]

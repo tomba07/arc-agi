@@ -415,3 +415,22 @@ def _perform_logical_operation(grid1: Grid, grid2: Grid, operation: str, output_
     else:
         raise ValueError(f"Unsupported logical operation: {operation}")
     return np.where(mask, output_color, 0)
+
+
+def change_enclosing_shapes_color(
+    grid: Grid, observations: Observations, example_index: int | None
+) -> Grid:
+    example = (
+        observations.test_observations
+        if example_index is None
+        else observations.example_observations[example_index]
+    )
+    color = next(iter(observations.consistent_new_output_colors), None)
+    if not example.enclosing_shapes or color is None:
+        return grid
+
+    result = grid.copy()
+    for shape in example.enclosing_shapes:
+        for cell in shape.cells:
+            result[cell] = color
+    return result

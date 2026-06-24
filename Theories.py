@@ -19,6 +19,7 @@ from Transformations import (
     crop_to_content,
     transpose,
     make_arrange_colored_cells_transformations,
+    change_enclosing_shapes_color,
 )
 from Observations import Observations
 
@@ -100,6 +101,8 @@ def get_theories(observations: Observations) -> list[Theory]:
         theories.extend(DIVIDER_THEORIES)
     if observations.grid_size_decreases and observations.single_shape_everywhere:
         theories.extend(SIZE_REDUCING_THEORIES)
+    if observations.has_enclosing_shapes_everywhere and len(observations.consistent_new_output_colors) == 1:
+        theories.append([change_enclosing_shapes_color])
 
     theories.extend(RECOLOR_THEORIES)
     return theories
