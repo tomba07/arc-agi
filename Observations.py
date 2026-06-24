@@ -64,6 +64,7 @@ class ExampleObservations:
     enclosing_shapes: list[Shape] = field(default_factory=list)
     input_color_strict_shapes: list[Shape] = field(default_factory=list)
     output_color_strict_shapes: list[Shape] = field(default_factory=list)
+    output_height_half_of_width: bool = False
 
 
 @dataclass
@@ -92,6 +93,7 @@ class Observations:
     has_single_vertical_divider_everywhere: bool = False
     input_color_always_zeroed: int | None = None
     has_enclosing_shapes_everywhere: bool = False
+    output_height_half_of_width_everywhere: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -769,10 +771,20 @@ def check_enclosing_shapes(obs: Observations) -> None:
         obs.has_enclosing_shapes_everywhere = True
 
 
+def check_output_height_half_of_width(obs: Observations) -> None:
+    for ex in obs.example_observations:
+        ex.output_height_half_of_width = (
+            ex.output_grid.shape[0] * 2 == ex.output_grid.shape[1]
+        )
+    obs.output_height_half_of_width_everywhere = all(
+        ex.output_height_half_of_width for ex in obs.example_observations
+    )
+
 OBSERVATION_CHECKS: list[ObservationCheck] = [
     check_grid_sizes,
     collect_shapes,
     check_output_size_ratio,
+    check_output_height_half_of_width,
     check_dividers,
     check_color_sets,
     check_zeroed_color,

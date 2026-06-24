@@ -92,6 +92,7 @@ b2862040: enclosing shapes color change
  - theory: change enclosing shapes color
 bbc9ae5d: half height of width, growing fill
  - output half height of width
+ - fill with 
 cf98881b: h dividers & right to left overlay
 dc433765: move green 1 closer to yellow (diag allowed)
 e98196ab: v divider & overlay (no overlap)

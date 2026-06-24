@@ -434,3 +434,17 @@ def change_enclosing_shapes_color(
         for cell in shape.cells:
             result[cell] = color
     return result
+
+def fill_with_increasing_rows(
+    grid: Grid, observations: Observations, example_index: int | None
+) -> Grid:
+    cols = grid.shape[1]
+    filled_cols = int(np.count_nonzero(grid[0]))
+    if filled_cols == 0:
+        return grid
+    color = int(grid[0, 0])
+    rows = cols // 2
+    result = np.zeros((rows, cols), dtype=int)
+    for i in range(rows):
+        result[i, :filled_cols + i] = color
+    return result

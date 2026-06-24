@@ -4,6 +4,7 @@ from Transformations import (
     connect_same_color_opposing_cells,
     create_beam_from_spaceship_tip,
     crop_to_square_abstraction,
+    fill_with_increasing_rows,
     make_logical_operation_on_divided_input_transformations,
     make_spiral_transformation,
     make_recolor_transformation,
@@ -103,6 +104,8 @@ def get_theories(observations: Observations) -> list[Theory]:
         theories.extend(SIZE_REDUCING_THEORIES)
     if observations.has_enclosing_shapes_everywhere and len(observations.consistent_new_output_colors) == 1:
         theories.append([change_enclosing_shapes_color])
+    if observations.output_height_half_of_width_everywhere:
+        theories.append([fill_with_increasing_rows])
 
     theories.extend(RECOLOR_THEORIES)
     return theories
