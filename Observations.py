@@ -76,7 +76,7 @@ class Observations:
     all_outputs_twice_as_large_as_inputs: bool | None = None
     has_single_horizontal_divider_everywhere: bool | None = None
     has_single_vertical_divider_everywhere: bool | None = None
-    input_color_always_zeroed: int | None = None
+    removed_input_color: int | None = None
     has_enclosing_shapes_everywhere: bool | None = None
     output_height_half_of_width_everywhere: bool | None = None
 
@@ -326,12 +326,21 @@ def check_dividers(obs: Observations) -> None:
         )
 
 
-def check_zeroed_color(obs: Observations) -> None:
-    input_color_sets = [set(np.unique(ex.input_grid)) - {0} for ex in obs.example_observations]
-    always_in_input = input_color_sets[0].intersection(*input_color_sets[1:])
-    output_color_sets = [set(np.unique(ex.output_grid)) - {0} for ex in obs.example_observations]
-    always_zeroed = always_in_input - set().union(*output_color_sets)
-    obs.input_color_always_zeroed = next(iter(always_zeroed)) if len(always_zeroed) == 1 else None
+def check_removed_color(observations: Observations) -> None:
+    colors_in_every_input: set[int] | None = None
+    for example in observations.example_observations:
+        input_colors = set(np.unique(example.input_grid)) - {0}
+        if colors_in_every_input is None:
+            colors_in_every_input = input_colors
+        else:
+            colors_in_every_input &= input_colors
+
+    colors_in_any_output: set[int] = set()
+    for example in observations.example_observations:
+        colors_in_any_output |= set(np.unique(example.output_grid)) - {0}
+
+    always_removed = (colors_in_every_input or set()) - colors_in_any_output
+    observations.removed_input_color = next(iter(always_removed)) if len(always_removed) == 1 else None
 
 
 def check_enclosing_shapes(obs: Observations) -> None:
@@ -379,7 +388,7 @@ OBSERVATION_CHECKS: list[ObservationCheck] = [
     check_output_height_half_of_width,
     check_dividers,
     check_color_sets,
-    check_zeroed_color,
+    check_removed_color,
     check_zero_shapes,
     check_cell_counts,
     check_square_abstraction,

@@ -88,8 +88,8 @@ def get_theories(observations: Observations) -> list[Theory]:
     # color transforms
     if observations.all_inputs_empty and observations.single_output_color is not None:
         theories.append([make_spiral_transformation(observations.single_output_color)])
-    if observations.input_color_always_zeroed is not None:
-        c = observations.input_color_always_zeroed
+    if observations.removed_input_color is not None:
+        c = observations.removed_input_color
         theories.append([make_recolor_transformation(c, 0)])
         theories.append([swap_colors, make_recolor_transformation(c, 0)])
     if (
