@@ -2,10 +2,10 @@ from typing import Callable
 
 import numpy as np
 
-from Observations import Shape, Observations
+from Shapes import Shape, Grid
+from Observations import Observations
 from Enums import Direction, DiagonalDirection, AxisDirection, LogicalOperation
 
-Grid = np.ndarray
 Transform = Callable[[Grid, Observations, int | None], Grid]
 Theory = list[Transform]
 
