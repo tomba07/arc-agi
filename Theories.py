@@ -20,14 +20,15 @@ from Transformations import (
     cast_uni_ray_from_two_by_twos,
     connect_same_color_opposing_cells,
     create_beam_from_spaceship_tip,
-    make_logical_operation_on_divided_input_transformations,
+    make_divider_operation,
 )
-from Observations import Observations, AxisDirection, LogicalOperation
+from Observations import Observations
+from Enums import AxisDirection, LogicalOperation
 
 ARC_COLORS = range(10)
 
 DIVIDER_THEORIES: list[Theory] = [
-    [make_logical_operation_on_divided_input_transformations(op)]
+    [make_divider_operation(op)]
     for op in LogicalOperation
 ]
 

@@ -2,14 +2,8 @@ from typing import Callable
 
 import numpy as np
 
-from Observations import (
-    Shape,
-    Observations,
-    Direction,
-    DiagonalDirection,
-    AxisDirection,
-    LogicalOperation,
-)
+from Observations import Shape, Observations
+from Enums import Direction, DiagonalDirection, AxisDirection, LogicalOperation
 
 Grid = np.ndarray
 Transform = Callable[[Grid, Observations, int | None], Grid]
@@ -37,22 +31,33 @@ def apply_theory(
     return grid
 
 
-def rotate_90(
-    grid: Grid, observations: Observations, example_index: int | None
-) -> Grid:
-    return np.rot90(grid, k=1)
+_DIAGONAL_DELTA: dict[DiagonalDirection, tuple[int, int]] = {
+    DiagonalDirection.TL: (-1, -1),
+    DiagonalDirection.TR: (-1, +1),
+    DiagonalDirection.BL: (+1, -1),
+    DiagonalDirection.BR: (+1, +1),
+}
 
 
-def rotate_180(
-    grid: Grid, observations: Observations, example_index: int | None
-) -> Grid:
-    return np.rot90(grid, k=2)
+def _cast_ray(
+    result: Grid, start_row: int, start_col: int, dr: int, dc: int, color: int
+) -> None:
+    r, c = start_row, start_col
+    while 0 <= r < result.shape[0] and 0 <= c < result.shape[1]:
+        result[r, c] = color
+        r += dr
+        c += dc
 
 
-def rotate_270(
-    grid: Grid, observations: Observations, example_index: int | None
-) -> Grid:
-    return np.rot90(grid, k=3)
+def make_rotation(k: int) -> Transform:
+    def fn(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
+        return np.rot90(grid, k=k)
+    return fn
+
+
+rotate_90 = make_rotation(1)
+rotate_180 = make_rotation(2)
+rotate_270 = make_rotation(3)
 
 
 def transpose(
@@ -182,47 +187,20 @@ def cast_uni_ray_from_two_by_twos(
     grid: Grid, observations: Observations, example_index: int | None
 ) -> Grid:
     consistent_direction = observations.consistent_two_by_two_uni_ray_direction_by_color
-    all_inputs_only_two_by_twos = observations.all_inputs_only_two_by_twos
+    if observations.all_inputs_only_two_by_twos is not True or consistent_direction is None:
+        return grid
 
-    if all_inputs_only_two_by_twos is not True or consistent_direction is None:
-        return grid  # No consistent direction to cast rays from
-    else:
-        shapes = _get_shapes(observations, example_index)
-        result = grid.copy()
-
-        # We already validated that all shapes are 2x2
-        for shape in shapes:
-            direction = consistent_direction.get(shape.color)
-
-            if direction == DiagonalDirection.TL:
-                start_row = shape.row - 1
-                start_col = shape.col - 1
-            elif direction == DiagonalDirection.TR:
-                start_row = shape.row - 1
-                start_col = shape.col + 2
-            elif direction == DiagonalDirection.BL:
-                start_row = shape.row + 2
-                start_col = shape.col - 1
-            elif direction == DiagonalDirection.BR:
-                start_row = shape.row + 2
-                start_col = shape.col + 2
-
-            while 0 <= start_row < grid.shape[0] and 0 <= start_col < grid.shape[1]:
-                result[start_row, start_col] = shape.color
-
-                if direction == DiagonalDirection.TL:
-                    start_row -= 1
-                    start_col -= 1
-                elif direction == DiagonalDirection.TR:
-                    start_row -= 1
-                    start_col += 1
-                elif direction == DiagonalDirection.BL:
-                    start_row += 1
-                    start_col -= 1
-                elif direction == DiagonalDirection.BR:
-                    start_row += 1
-                    start_col += 1
-        return result
+    shapes = _get_shapes(observations, example_index)
+    result = grid.copy()
+    for shape in shapes:
+        direction = consistent_direction.get(shape.color)
+        if direction is None:
+            continue
+        dr, dc = _DIAGONAL_DELTA[direction]
+        start_row = shape.row + (shape.height if dr > 0 else -1)
+        start_col = shape.col + (shape.width if dc > 0 else -1)
+        _cast_ray(result, start_row, start_col, dr, dc, shape.color)
+    return result
 
 
 def make_recolor_by_enclosure_transformation(flip_colors: bool = False) -> Transform:
@@ -311,30 +289,21 @@ def connect_same_color_opposing_cells(
 def create_beam_from_spaceship_tip(
     grid: Grid, observations: Observations, example_index: int | None
 ) -> Grid:
-    example = _get_example(observations, example_index)
-    spaceship_shape = example.spaceship_shape
-
+    spaceship_shape = _get_example(observations, example_index).spaceship_shape
     if spaceship_shape is None:
-        return grid  # No spaceship shape to create a beam from
+        return grid
 
     result = grid.copy()
     tip_row, tip_col = spaceship_shape.tip_row, spaceship_shape.tip_col
-    direction = spaceship_shape.direction
     color = spaceship_shape.beam_color
-
-    if direction == Direction.UP:
-        for r in range(tip_row - 1, -1, -1):
-            result[r, tip_col] = color
-    elif direction == Direction.DOWN:
-        for r in range(tip_row + 1, result.shape[0]):
-            result[r, tip_col] = color
-    elif direction == Direction.LEFT:
-        for c in range(tip_col - 1, -1, -1):
-            result[tip_row, c] = color
-    elif direction == Direction.RIGHT:
-        for c in range(tip_col + 1, result.shape[1]):
-            result[tip_row, c] = color
-
+    _CARDINAL_DELTA = {
+        Direction.UP: (-1, 0),
+        Direction.DOWN: (+1, 0),
+        Direction.LEFT: (0, -1),
+        Direction.RIGHT: (0, +1),
+    }
+    dr, dc = _CARDINAL_DELTA[spaceship_shape.direction]
+    _cast_ray(result, tip_row + dr, tip_col + dc, dr, dc, color)
     return result
 
 
@@ -346,42 +315,19 @@ def mirror_horizontally_and_vertically(
     return np.vstack([top, bottom])
 
 
-def make_logical_operation_on_divided_input_transformations(
-    operation: LogicalOperation,
-) -> Transform:
-
+def make_divider_operation(operation: LogicalOperation) -> Transform:
     def fn(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
-        return logical_operation_on_divided_input(
-            grid, observations, example_index, operation
-        )
-
+        example = _get_example(observations, example_index)
+        if not example.single_horizontal_divider and not example.single_vertical_divider:
+            return grid
+        output_color = observations.single_output_color or 3
+        if example.single_horizontal_divider:
+            mid = grid.shape[0] // 2
+            return _perform_logical_operation(grid[:mid, :], grid[mid + 1:, :], operation, output_color)
+        else:
+            mid = grid.shape[1] // 2
+            return _perform_logical_operation(grid[:, :mid], grid[:, mid + 1:], operation, output_color)
     return fn
-
-
-def logical_operation_on_divided_input(
-    grid: Grid,
-    observations: Observations,
-    example_index: int | None,
-    operation: LogicalOperation,
-) -> Grid:
-    example = _get_example(observations, example_index)
-    if not example.single_horizontal_divider and not example.single_vertical_divider:
-        return grid  # No divider to perform logical operation on
-
-    if example.single_horizontal_divider:
-        mid_row = grid.shape[0] // 2
-        top_half = grid[:mid_row, :]
-        bottom_half = grid[mid_row + 1 :, :]
-        return _perform_logical_operation(
-            top_half, bottom_half, operation, observations.single_output_color or 3
-        )
-    else:
-        mid_col = grid.shape[1] // 2
-        left_half = grid[:, :mid_col]
-        right_half = grid[:, mid_col + 1 :]
-        return _perform_logical_operation(
-            left_half, right_half, operation, observations.single_output_color or 3
-        )
 
 
 def _perform_logical_operation(
