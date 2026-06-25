@@ -26,6 +26,15 @@ class AxisDirection(str, Enum):
     VERTICAL = "vertical"
 
 
+class LogicalOperation(str, Enum):
+    AND = "AND"
+    OR = "OR"
+    XOR = "XOR"
+    NAND = "NAND"
+    NOR = "NOR"
+    XNOR = "XNOR"
+
+
 @dataclass
 class CellsInfo:
     cells: set[tuple[int, int]]
@@ -40,7 +49,7 @@ class Shape:
     height: int
     cells: set[tuple[int, int]]
     is_square_abstraction: bool = False
-    color: int = None
+    color: int | None = None
     is_two_by_two: bool = False
     encloses_cells: bool = False
 
@@ -48,10 +57,10 @@ class Shape:
 @dataclass
 class Spaceship_Shape(Shape):
     is_spaceship_shape: bool = True
-    beam_color: int = None
+    beam_color: int | None = None
     direction: Direction | None = None
-    tip_row: int = None
-    tip_col: int = None
+    tip_row: int | None = None
+    tip_col: int | None = None
 
 
 @dataclass

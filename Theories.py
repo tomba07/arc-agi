@@ -22,11 +22,14 @@ from Transformations import (
     create_beam_from_spaceship_tip,
     make_logical_operation_on_divided_input_transformations,
 )
-from Observations import Observations, AxisDirection
+from Observations import Observations, AxisDirection, LogicalOperation
 
 ARC_COLORS = range(10)
 
-LOGICAL_OPERATIONS = ["AND", "OR", "XOR", "NAND", "NOR", "XNOR"]
+DIVIDER_THEORIES: list[Theory] = [
+    [make_logical_operation_on_divided_input_transformations(op)]
+    for op in LogicalOperation
+]
 
 SAME_SIZE_THEORIES: list[Theory] = [
     [rotate_90],
@@ -48,11 +51,6 @@ RECOLOR_THEORIES: list[Theory] = [
     for from_color in ARC_COLORS
     for to_color in ARC_COLORS
     if from_color != to_color
-]
-
-DIVIDER_THEORIES: list[Theory] = [
-    [make_logical_operation_on_divided_input_transformations(op)]
-    for op in LOGICAL_OPERATIONS
 ]
 
 
@@ -98,7 +96,7 @@ def get_theories(observations: Observations) -> list[Theory]:
         theories.extend(DIVIDER_THEORIES)
     if observations.grid_size_decreases and observations.single_shape_everywhere:
         theories.extend(SIZE_REDUCING_THEORIES)
-    if observations.has_enclosing_shapes_everywhere and len(observations.consistent_new_output_colors) == 1:
+    if observations.has_enclosing_shapes_everywhere and observations.consistent_new_output_colors is not None and len(observations.consistent_new_output_colors) == 1:
         theories.append([change_enclosing_shapes_color])
     if observations.output_height_half_of_width_everywhere:
         theories.append([fill_with_increasing_rows])

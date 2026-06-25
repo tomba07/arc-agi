@@ -2,7 +2,7 @@ from typing import Callable
 
 import numpy as np
 
-from Observations import Shape, Observations, Direction, DiagonalDirection, AxisDirection
+from Observations import Shape, Observations, Direction, DiagonalDirection, AxisDirection, LogicalOperation
 
 Grid = np.ndarray
 Transform = Callable[[Grid, Observations, int | None], Grid]
@@ -24,9 +24,12 @@ def apply_theory(
 
 
 def _get_shapes(observations: Observations, example_index: int | None) -> list[Shape]:
-    if example_index is None:
-        return observations.test_observations.input_shapes
-    return observations.example_observations[example_index].input_shapes
+    shapes = (
+        observations.test_observations.input_shapes
+        if example_index is None
+        else observations.example_observations[example_index].input_shapes
+    )
+    return shapes or []
 
 
 def rotate_90(
@@ -363,7 +366,7 @@ def mirror_horizontally_and_vertically(
 
 
 def make_logical_operation_on_divided_input_transformations(
-    operation: str,
+    operation: LogicalOperation,
 ) -> Transform:
 
     def fn(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
@@ -375,7 +378,7 @@ def make_logical_operation_on_divided_input_transformations(
 
 
 def logical_operation_on_divided_input(
-    grid: Grid, observations: Observations, example_index: int | None, operation: str
+    grid: Grid, observations: Observations, example_index: int | None, operation: LogicalOperation
 ) -> Grid:
     example = (
         observations.test_observations
@@ -397,20 +400,20 @@ def logical_operation_on_divided_input(
         return _perform_logical_operation(left_half, right_half, operation, observations.single_output_color or 3)
 
 
-def _perform_logical_operation(grid1: Grid, grid2: Grid, operation: str, output_color: int) -> Grid:
+def _perform_logical_operation(grid1: Grid, grid2: Grid, operation: LogicalOperation, output_color: int) -> Grid:
     a = grid1 != 0
     b = grid2 != 0
-    if operation == "AND":
+    if operation == LogicalOperation.AND:
         mask = a & b
-    elif operation == "OR":
+    elif operation == LogicalOperation.OR:
         mask = a | b
-    elif operation == "XOR":
+    elif operation == LogicalOperation.XOR:
         mask = a ^ b
-    elif operation == "NAND":
+    elif operation == LogicalOperation.NAND:
         mask = ~(a & b)
-    elif operation == "NOR":
+    elif operation == LogicalOperation.NOR:
         mask = ~(a | b)
-    elif operation == "XNOR":
+    elif operation == LogicalOperation.XNOR:
         mask = ~(a ^ b)
     else:
         raise ValueError(f"Unsupported logical operation: {operation}")
