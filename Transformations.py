@@ -2,7 +2,7 @@ from typing import Callable
 
 import numpy as np
 
-from Observations import Shape, Observations
+from Observations import Shape, Observations, Direction, DiagonalDirection, AxisDirection
 
 Grid = np.ndarray
 Transform = Callable[[Grid, Observations, int | None], Grid]
@@ -194,32 +194,32 @@ def cast_uni_ray_from_two_by_twos(
         for shape in shapes:
             direction = consistent_direction.get(shape.color)
 
-            if direction == "tl":
+            if direction == DiagonalDirection.TL:
                 start_row = shape.row - 1
                 start_col = shape.col - 1
-            elif direction == "tr":
+            elif direction == DiagonalDirection.TR:
                 start_row = shape.row - 1
                 start_col = shape.col + 2
-            elif direction == "bl":
+            elif direction == DiagonalDirection.BL:
                 start_row = shape.row + 2
                 start_col = shape.col - 1
-            elif direction == "br":
+            elif direction == DiagonalDirection.BR:
                 start_row = shape.row + 2
                 start_col = shape.col + 2
 
             while 0 <= start_row < grid.shape[0] and 0 <= start_col < grid.shape[1]:
                 result[start_row, start_col] = shape.color
 
-                if direction == "tl":
+                if direction == DiagonalDirection.TL:
                     start_row -= 1
                     start_col -= 1
-                elif direction == "tr":
+                elif direction == DiagonalDirection.TR:
                     start_row -= 1
                     start_col += 1
-                elif direction == "bl":
+                elif direction == DiagonalDirection.BL:
                     start_row += 1
                     start_col -= 1
-                elif direction == "br":
+                elif direction == DiagonalDirection.BR:
                     start_row += 1
                     start_col += 1
         return result
@@ -252,7 +252,7 @@ def make_recolor_by_enclosure_transformation(flip_colors: bool = False) -> Trans
 
 
 def make_arrange_colored_cells_transformations(
-    direction: str, increasing: bool = True
+    direction: AxisDirection, increasing: bool = True
 ) -> Transform:
     def fn(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
         example = (
@@ -268,10 +268,10 @@ def make_arrange_colored_cells_transformations(
         rows = None
         cols = None
 
-        if direction == "horizontal":
+        if direction == AxisDirection.HORIZONTAL:
             rows = len(cell_count_by_color)
             cols = max(cell_count_by_color.values())
-        elif direction == "vertical":
+        elif direction == AxisDirection.VERTICAL:
             cols = len(cell_count_by_color)
             rows = max(cell_count_by_color.values())
 
@@ -281,9 +281,9 @@ def make_arrange_colored_cells_transformations(
             cell_count_by_color.items(), key=lambda x: x[1], reverse=not increasing
         )
         for i, (color, count) in enumerate(sorted_colors):
-            if direction == "horizontal":
+            if direction == AxisDirection.HORIZONTAL:
                 result[i, :count] = color
-            elif direction == "vertical":
+            elif direction == AxisDirection.VERTICAL:
                 result[:count, i] = color
 
         return result
@@ -338,16 +338,16 @@ def create_beam_from_spaceship_tip(
     direction = spaceship_shape.direction
     color = spaceship_shape.beam_color
 
-    if direction == "up":
+    if direction == Direction.UP:
         for r in range(tip_row - 1, -1, -1):
             result[r, tip_col] = color
-    elif direction == "down":
+    elif direction == Direction.DOWN:
         for r in range(tip_row + 1, result.shape[0]):
             result[r, tip_col] = color
-    elif direction == "left":
+    elif direction == Direction.LEFT:
         for c in range(tip_col - 1, -1, -1):
             result[tip_row, c] = color
-    elif direction == "right":
+    elif direction == Direction.RIGHT:
         for c in range(tip_col + 1, result.shape[1]):
             result[tip_row, c] = color
 

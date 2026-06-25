@@ -22,7 +22,7 @@ from Transformations import (
     make_arrange_colored_cells_transformations,
     change_enclosing_shapes_color,
 )
-from Observations import Observations
+from Observations import Observations, AxisDirection
 
 ARC_COLORS = range(10)
 
@@ -79,8 +79,7 @@ def get_theories(observations: Observations) -> list[Theory]:
         theories.append([make_recolor_by_enclosure_transformation(flip_colors=False)])
         theories.append([make_recolor_by_enclosure_transformation(flip_colors=True)])
     if observations.cell_count_by_color_identical_everywhere and observations.grid_size_stays_identical is False:
-        directions = ["horizontal", "vertical"]
-        for direction in directions:
+        for direction in AxisDirection:
             theories.append(
                 [make_arrange_colored_cells_transformations(direction, True)]
             )
