@@ -78,10 +78,7 @@ def get_theories(observations: Observations) -> list[Theory]:
     ):
         theories.append([make_recolor_by_enclosure_transformation(flip_colors=False)])
         theories.append([make_recolor_by_enclosure_transformation(flip_colors=True)])
-    if (
-        observations.cell_count_by_color_identical_everywhere
-        and not observations.grid_size_stays_identical
-    ):
+    if observations.cell_count_by_color_identical_everywhere and observations.grid_size_stays_identical is False:
         directions = ["horizontal", "vertical"]
         for direction in directions:
             theories.append(

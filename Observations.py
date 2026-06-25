@@ -38,7 +38,7 @@ class Spaceship_Shape(Shape):
 @dataclass
 class ExampleObservations:
     input_grid: Grid
-    output_grid: Grid = None
+    output_grid: Grid | None = None
     input_shape_count: int = 0
     enclosed_zero_shapes: list[Shape] = field(default_factory=list)
     non_enclosed_zero_shapes: list[Shape] = field(default_factory=list)
@@ -48,15 +48,15 @@ class ExampleObservations:
     new_output_colors_count: int = 0
     input_shapes: list[Shape] = field(default_factory=list)
     output_shapes: list[Shape] = field(default_factory=list)
-    input_square_abstraction: Shape = None
-    input_square_abstraction_color: int = None
+    input_square_abstraction: Shape | None = None
+    input_square_abstraction_color: int | None = None
     input_only_two_by_twos: bool = False
-    two_by_two_uni_ray_direction_by_color: dict[int, str] = None
-    input_cell_count_by_color: dict[int, int] = None
-    output_cell_count_by_color: dict[int, int] = None
-    cell_count_by_color_identical: bool = None
-    opposing_same_color_single_cells: list[tuple[Shape, Shape]] = None
-    spaceship_shape: Spaceship_Shape = None
+    two_by_two_uni_ray_direction_by_color: dict[int, str] | None = None
+    input_cell_count_by_color: dict[int, int] | None = None
+    output_cell_count_by_color: dict[int, int] | None = None
+    cell_count_by_color_identical: bool | None = None
+    opposing_same_color_single_cells: list[tuple[Shape, Shape]] | None = None
+    spaceship_shape: Spaceship_Shape | None = None
     output_twice_as_large_as_input: bool = False
     single_horizontal_divider: bool = False
     single_vertical_divider: bool = False
@@ -71,29 +71,28 @@ class ExampleObservations:
 class Observations:
     example_observations: list[ExampleObservations]
     test_observations: ExampleObservations
-    grid_size_stays_identical: bool = False
-    grid_size_decreases: bool = False
-    shapes_collected: bool = False
-    single_shape_everywhere: bool = False
-    all_inputs_empty: bool = False
-    single_output_color: int = None
-    input_square_abstraction_everywhere: bool = False
-    all_inputs_only_two_by_twos: bool = False
-    consistent_two_by_two_uni_ray_direction_by_color: dict[int, str] = None
-    consistent_new_output_colors: list[int] = None
-    has_two_new_output_colors: bool = False
-    two_new_output_colors_everywhere: bool = False
-    enclosed_zero_shapes_everywhere: bool = False
-    non_enclosed_zero_shapes_everywhere: bool = False
-    cell_count_by_color_identical_everywhere: bool = None
-    has_opposing_same_color_single_cells_everywhere: bool = False
-    has_spaceship_shape_everywhere: bool = False
-    all_outputs_twice_as_large_as_inputs: bool = False
-    has_single_horizontal_divider_everywhere: bool = False
-    has_single_vertical_divider_everywhere: bool = False
+    grid_size_stays_identical: bool | None = None
+    grid_size_decreases: bool | None = None
+    shapes_collected: bool | None = None
+    single_shape_everywhere: bool | None = None
+    all_inputs_empty: bool | None = None
+    single_output_color: int | None = None
+    input_square_abstraction_everywhere: bool | None = None
+    all_inputs_only_two_by_twos: bool | None = None
+    consistent_two_by_two_uni_ray_direction_by_color: dict[int, str] | None = None
+    consistent_new_output_colors: list[int] | None = None
+    two_new_output_colors_everywhere: bool | None = None
+    enclosed_zero_shapes_everywhere: bool | None = None
+    non_enclosed_zero_shapes_everywhere: bool | None = None
+    cell_count_by_color_identical_everywhere: bool | None = None
+    has_opposing_same_color_single_cells_everywhere: bool | None = None
+    has_spaceship_shape_everywhere: bool | None = None
+    all_outputs_twice_as_large_as_inputs: bool | None = None
+    has_single_horizontal_divider_everywhere: bool | None = None
+    has_single_vertical_divider_everywhere: bool | None = None
     input_color_always_zeroed: int | None = None
-    has_enclosing_shapes_everywhere: bool = False
-    output_height_half_of_width_everywhere: bool = False
+    has_enclosing_shapes_everywhere: bool | None = None
+    output_height_half_of_width_everywhere: bool | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -769,6 +768,8 @@ def check_enclosing_shapes(obs: Observations) -> None:
         and obs.test_observations.has_enclosing_shapes
     ):
         obs.has_enclosing_shapes_everywhere = True
+    else:
+        obs.has_enclosing_shapes_everywhere = False
 
 
 def check_output_height_half_of_width(obs: Observations) -> None:
