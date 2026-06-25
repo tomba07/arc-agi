@@ -25,7 +25,6 @@ class Shape:
     encloses_cells: bool = False
 
 
-# inherits from Shape
 @dataclass
 class Spaceship_Shape(Shape):
     is_spaceship_shape: bool = True
@@ -40,14 +39,14 @@ class ExampleObservations:
     input_grid: Grid
     output_grid: Grid | None = None
     input_shape_count: int = 0
-    enclosed_zero_shapes: list[Shape] = field(default_factory=list)
-    non_enclosed_zero_shapes: list[Shape] = field(default_factory=list)
-    output_colors: set[int] = field(default_factory=set)
+    enclosed_zero_shapes: list[Shape] | None = None
+    non_enclosed_zero_shapes: list[Shape] | None = None
+    output_colors: set[int] | None = None
     output_colors_count: int = 0
-    new_output_colors: set[int] = field(default_factory=set)
+    new_output_colors: set[int] | None = None
     new_output_colors_count: int = 0
-    input_shapes: list[Shape] = field(default_factory=list)
-    output_shapes: list[Shape] = field(default_factory=list)
+    input_shapes: list[Shape] | None = None
+    output_shapes: list[Shape] | None = None
     input_square_abstraction: Shape | None = None
     input_square_abstraction_color: int | None = None
     input_only_two_by_twos: bool = False
@@ -62,8 +61,8 @@ class ExampleObservations:
     single_vertical_divider: bool = False
     has_enclosing_shapes: bool = False
     enclosing_shapes: list[Shape] = field(default_factory=list)
-    input_color_strict_shapes: list[Shape] = field(default_factory=list)
-    output_color_strict_shapes: list[Shape] = field(default_factory=list)
+    input_color_strict_shapes: list[Shape] | None = None
+    output_color_strict_shapes: list[Shape] | None = None
     output_height_half_of_width: bool = False
 
 
