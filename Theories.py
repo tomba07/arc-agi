@@ -111,5 +111,10 @@ def get_theories(observations: Observations) -> list[Theory]:
     if observations.output_height_half_of_width_everywhere:
         theories.append([fill_with_increasing_rows])
 
-    theories.extend(RECOLOR_THEORIES)
+    if (
+        observations.grid_size_stays_identical
+        and observations.shapes_collected
+        and not observations.cell_count_by_color_identical_everywhere
+    ):
+        theories.extend(RECOLOR_THEORIES)
     return theories
