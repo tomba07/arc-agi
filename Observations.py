@@ -180,7 +180,6 @@ def get_shapes(grid: Grid) -> list[Shape]:
 
 
 def get_color_strict_shapes(grid: Grid) -> list[Shape]:
-    """Like get_shapes but each connected same-color region is its own shape."""
     visited: set[tuple[int, int]] = set()
     shapes = []
     for start_row in range(grid.shape[0]):
