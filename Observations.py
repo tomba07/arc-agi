@@ -11,7 +11,6 @@ from Shapes import (
     get_shapes,
     get_color_strict_shapes,
     get_square_abstraction,
-    get_two_by_two_uni_ray_direction_by_color,
     _check_spaceship_shape,
     _collect_opposing_same_color_single_cells,
     _get_zero_shapes,
@@ -263,6 +262,51 @@ def check_spaceship(obs: Observations) -> None:
         all(ex.spaceship_shape is not None for ex in obs.example_observations)
         and test.spaceship_shape is not None
     )
+
+
+def _check_ray_from_location(
+    start_row: int, start_col: int, direction: DiagonalDirection, color: int, output_grid: Grid
+) -> bool:
+    if (
+        start_row < 0 or start_row >= output_grid.shape[0]
+        or start_col < 0 or start_col >= output_grid.shape[1]
+    ):
+        return False
+    while 0 <= start_row < output_grid.shape[0] and 0 <= start_col < output_grid.shape[1]:
+        if output_grid[start_row, start_col] != color:
+            return False
+        if direction == DiagonalDirection.TL:
+            start_row -= 1; start_col -= 1
+        elif direction == DiagonalDirection.TR:
+            start_row -= 1; start_col += 1
+        elif direction == DiagonalDirection.BL:
+            start_row += 1; start_col -= 1
+        elif direction == DiagonalDirection.BR:
+            start_row += 1; start_col += 1
+    return True
+
+
+def get_two_by_two_uni_ray_direction_by_color(
+    input_shapes: list[Shape], output_grid: Grid
+) -> dict[int, DiagonalDirection | None]:
+    direction_by_color: dict[int, DiagonalDirection | None] = {}
+    for shape in input_shapes:
+        if shape.is_two_by_two:
+            color = shape.color
+            for direction, (offset_row, offset_col) in [
+                (DiagonalDirection.TL, (-1, -1)),
+                (DiagonalDirection.TR, (-1, +1)),
+                (DiagonalDirection.BL, (+1, -1)),
+                (DiagonalDirection.BR, (+1, +1)),
+            ]:
+                start_row = shape.row + offset_row
+                start_col = shape.col + offset_col
+                if _check_ray_from_location(start_row, start_col, direction, color, output_grid):
+                    if color in direction_by_color:
+                        direction_by_color[color] = None
+                    else:
+                        direction_by_color[color] = direction
+    return direction_by_color
 
 
 def check_two_by_two_rays(obs: Observations) -> None:
