@@ -94,11 +94,6 @@ class Observations:
     output_height_half_of_width_everywhere: bool | None = None
 
 
-# ---------------------------------------------------------------------------
-# Low-level helpers (unchanged)
-# ---------------------------------------------------------------------------
-
-
 def _collect_cells(
     grid: Grid, start_row: int, start_col: int, visited: set
 ) -> CellsInfo:
@@ -436,10 +431,6 @@ def _check_ray_from_location(
             start_col += 1
     return True
 
-
-# ---------------------------------------------------------------------------
-# Incremental observation checks
-# ---------------------------------------------------------------------------
 
 ObservationCheck = Callable[["Observations"], None]
 
@@ -779,6 +770,7 @@ def check_output_height_half_of_width(obs: Observations) -> None:
     obs.output_height_half_of_width_everywhere = all(
         ex.output_height_half_of_width for ex in obs.example_observations
     )
+
 
 OBSERVATION_CHECKS: list[ObservationCheck] = [
     check_grid_sizes,
