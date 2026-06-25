@@ -16,20 +16,6 @@ Transform = Callable[[Grid, Observations, int | None], Grid]
 Theory = list[Transform]
 
 
-def apply_theory(
-    theory: Theory,
-    observations: Observations,
-    example_index: int | None,
-) -> Grid:
-    if example_index is None:
-        grid = observations.test_observations.input_grid.copy()
-    else:
-        grid = observations.example_observations[example_index].input_grid.copy()
-    for fn in theory:
-        grid = fn(grid, observations, example_index)
-    return grid
-
-
 def _get_example(observations: Observations, example_index: int | None):
     if example_index is None:
         return observations.test_observations
@@ -38,6 +24,17 @@ def _get_example(observations: Observations, example_index: int | None):
 
 def _get_shapes(observations: Observations, example_index: int | None) -> list[Shape]:
     return _get_example(observations, example_index).input_shapes or []
+
+
+def apply_theory(
+    theory: Theory,
+    observations: Observations,
+    example_index: int | None,
+) -> Grid:
+    grid = _get_example(observations, example_index).input_grid.copy()
+    for fn in theory:
+        grid = fn(grid, observations, example_index)
+    return grid
 
 
 def rotate_90(
