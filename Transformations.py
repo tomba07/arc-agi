@@ -2,7 +2,14 @@ from typing import Callable
 
 import numpy as np
 
-from Observations import Shape, Observations, Direction, DiagonalDirection, AxisDirection, LogicalOperation
+from Observations import (
+    Shape,
+    Observations,
+    Direction,
+    DiagonalDirection,
+    AxisDirection,
+    LogicalOperation,
+)
 
 Grid = np.ndarray
 Transform = Callable[[Grid, Observations, int | None], Grid]
@@ -23,13 +30,14 @@ def apply_theory(
     return grid
 
 
+def _get_example(observations: Observations, example_index: int | None):
+    if example_index is None:
+        return observations.test_observations
+    return observations.example_observations[example_index]
+
+
 def _get_shapes(observations: Observations, example_index: int | None) -> list[Shape]:
-    shapes = (
-        observations.test_observations.input_shapes
-        if example_index is None
-        else observations.example_observations[example_index].input_shapes
-    )
-    return shapes or []
+    return _get_example(observations, example_index).input_shapes or []
 
 
 def rotate_90(
@@ -144,11 +152,7 @@ def make_spiral_transformation(color: int) -> Transform:
 def crop_to_square_abstraction(
     grid: Grid, observations: Observations, example_index: int | None
 ) -> Grid:
-    example = (
-        observations.test_observations
-        if example_index is None
-        else observations.example_observations[example_index]
-    )
+    example = _get_example(observations, example_index)
     input_square_abstraction = example.input_square_abstraction
 
     if input_square_abstraction is None:
@@ -167,11 +171,7 @@ def crop_to_square_abstraction(
 def recolor_to_square_abstraction(
     grid: Grid, observations: Observations, example_index: int | None
 ) -> Grid:
-    example = (
-        observations.test_observations
-        if example_index is None
-        else observations.example_observations[example_index]
-    )
+    example = _get_example(observations, example_index)
     input_square_abstraction = example.input_square_abstraction
 
     if input_square_abstraction is None:
@@ -237,11 +237,7 @@ def make_recolor_by_enclosure_transformation(flip_colors: bool = False) -> Trans
         enclosed_color, non_enclosed_color = (
             (color_b, color_a) if flip_colors else (color_a, color_b)
         )
-        example = (
-            observations.test_observations
-            if example_index is None
-            else observations.example_observations[example_index]
-        )
+        example = _get_example(observations, example_index)
         result = grid.copy()
         for shape in example.enclosed_zero_shapes:
             for cell in shape.cells:
@@ -258,11 +254,7 @@ def make_arrange_colored_cells_transformations(
     direction: AxisDirection, increasing: bool = True
 ) -> Transform:
     def fn(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
-        example = (
-            observations.test_observations
-            if example_index is None
-            else observations.example_observations[example_index]
-        )
+        example = _get_example(observations, example_index)
         cell_count_by_color = example.input_cell_count_by_color
 
         if cell_count_by_color is None:
@@ -297,11 +289,7 @@ def make_arrange_colored_cells_transformations(
 def connect_same_color_opposing_cells(
     grid: Grid, observations: Observations, example_index: int | None
 ) -> Grid:
-    example = (
-        observations.test_observations
-        if example_index is None
-        else observations.example_observations[example_index]
-    )
+    example = _get_example(observations, example_index)
     opposing_cells = example.opposing_same_color_single_cells
 
     if not opposing_cells:
@@ -326,11 +314,7 @@ def connect_same_color_opposing_cells(
 def create_beam_from_spaceship_tip(
     grid: Grid, observations: Observations, example_index: int | None
 ) -> Grid:
-    example = (
-        observations.test_observations
-        if example_index is None
-        else observations.example_observations[example_index]
-    )
+    example = _get_example(observations, example_index)
     spaceship_shape = example.spaceship_shape
 
     if spaceship_shape is None:
@@ -378,29 +362,34 @@ def make_logical_operation_on_divided_input_transformations(
 
 
 def logical_operation_on_divided_input(
-    grid: Grid, observations: Observations, example_index: int | None, operation: LogicalOperation
+    grid: Grid,
+    observations: Observations,
+    example_index: int | None,
+    operation: LogicalOperation,
 ) -> Grid:
-    example = (
-        observations.test_observations
-        if example_index is None
-        else observations.example_observations[example_index]
-    )
+    example = _get_example(observations, example_index)
     if not example.single_horizontal_divider and not example.single_vertical_divider:
         return grid  # No divider to perform logical operation on
 
     if example.single_horizontal_divider:
         mid_row = grid.shape[0] // 2
         top_half = grid[:mid_row, :]
-        bottom_half = grid[mid_row + 1:, :]
-        return _perform_logical_operation(top_half, bottom_half, operation, observations.single_output_color or 3)
+        bottom_half = grid[mid_row + 1 :, :]
+        return _perform_logical_operation(
+            top_half, bottom_half, operation, observations.single_output_color or 3
+        )
     else:
         mid_col = grid.shape[1] // 2
         left_half = grid[:, :mid_col]
-        right_half = grid[:, mid_col + 1:]
-        return _perform_logical_operation(left_half, right_half, operation, observations.single_output_color or 3)
+        right_half = grid[:, mid_col + 1 :]
+        return _perform_logical_operation(
+            left_half, right_half, operation, observations.single_output_color or 3
+        )
 
 
-def _perform_logical_operation(grid1: Grid, grid2: Grid, operation: LogicalOperation, output_color: int) -> Grid:
+def _perform_logical_operation(
+    grid1: Grid, grid2: Grid, operation: LogicalOperation, output_color: int
+) -> Grid:
     a = grid1 != 0
     b = grid2 != 0
     if operation == LogicalOperation.AND:
@@ -423,11 +412,7 @@ def _perform_logical_operation(grid1: Grid, grid2: Grid, operation: LogicalOpera
 def change_enclosing_shapes_color(
     grid: Grid, observations: Observations, example_index: int | None
 ) -> Grid:
-    example = (
-        observations.test_observations
-        if example_index is None
-        else observations.example_observations[example_index]
-    )
+    example = _get_example(observations, example_index)
     color = next(iter(observations.consistent_new_output_colors), None)
     if not example.enclosing_shapes or color is None:
         return grid
@@ -437,6 +422,7 @@ def change_enclosing_shapes_color(
         for cell in shape.cells:
             result[cell] = color
     return result
+
 
 def fill_with_increasing_rows(
     grid: Grid, observations: Observations, example_index: int | None
@@ -449,5 +435,5 @@ def fill_with_increasing_rows(
     rows = cols // 2
     result = np.zeros((rows, cols), dtype=int)
     for i in range(rows):
-        result[i, :filled_cols + i] = color
+        result[i, : filled_cols + i] = color
     return result
