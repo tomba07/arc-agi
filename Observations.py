@@ -79,7 +79,9 @@ class ExampleObservations:
     input_square_abstraction: Shape | None = None
     input_square_abstraction_color: int | None = None
     input_only_two_by_twos: bool = False
-    two_by_two_uni_ray_direction_by_color: dict[int, DiagonalDirection | None] | None = None
+    two_by_two_uni_ray_direction_by_color: (
+        dict[int, DiagonalDirection | None] | None
+    ) = None
     input_cell_count_by_color: dict[int, int] | None = None
     output_cell_count_by_color: dict[int, int] | None = None
     cell_count_by_color_identical: bool | None = None
@@ -107,7 +109,9 @@ class Observations:
     single_output_color: int | None = None
     input_square_abstraction_everywhere: bool | None = None
     all_inputs_only_two_by_twos: bool | None = None
-    consistent_two_by_two_uni_ray_direction_by_color: dict[int, DiagonalDirection | None] | None = None
+    consistent_two_by_two_uni_ray_direction_by_color: (
+        dict[int, DiagonalDirection | None] | None
+    ) = None
     consistent_new_output_colors: list[int] | None = None
     two_new_output_colors_everywhere: bool | None = None
     enclosed_zero_shapes_everywhere: bool | None = None
@@ -253,7 +257,9 @@ def _check_pyramid_shape_and_beam_color(
     center_col = shape.col + shape.width // 2
 
     if direction in (Direction.UP, Direction.DOWN):
-        beam_row = shape.row + shape.height - 1 if direction == Direction.UP else shape.row
+        beam_row = (
+            shape.row + shape.height - 1 if direction == Direction.UP else shape.row
+        )
         beam_col = center_col
         cells = [
             (
@@ -267,7 +273,9 @@ def _check_pyramid_shape_and_beam_color(
         ]
     else:
         beam_row = center_row
-        beam_col = shape.col + shape.width - 1 if direction == Direction.LEFT else shape.col
+        beam_col = (
+            shape.col + shape.width - 1 if direction == Direction.LEFT else shape.col
+        )
         cells = [
             (
                 center_row + dr,
@@ -429,7 +437,11 @@ def get_two_by_two_uni_ray_direction_by_color(
 
 
 def _check_ray_from_location(
-    start_row: int, start_col: int, direction: DiagonalDirection, color: int, output_grid: Grid
+    start_row: int,
+    start_col: int,
+    direction: DiagonalDirection,
+    color: int,
+    output_grid: Grid,
 ) -> bool:
     if (
         start_row < 0

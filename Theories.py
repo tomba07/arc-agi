@@ -76,7 +76,10 @@ def get_theories(observations: Observations) -> list[Theory]:
     ):
         theories.append([make_recolor_by_enclosure_transformation(flip_colors=False)])
         theories.append([make_recolor_by_enclosure_transformation(flip_colors=True)])
-    if observations.cell_count_by_color_identical_everywhere and observations.grid_size_stays_identical is False:
+    if (
+        observations.cell_count_by_color_identical_everywhere
+        and observations.grid_size_stays_identical is False
+    ):
         for direction in AxisDirection:
             theories.append(
                 [make_arrange_colored_cells_transformations(direction, True)]
@@ -92,11 +95,18 @@ def get_theories(observations: Observations) -> list[Theory]:
         theories.append([mirror_horizontally_and_vertically])
     if observations.grid_size_stays_identical and observations.shapes_collected:
         theories.extend(SAME_SIZE_THEORIES)
-    if (observations.has_single_horizontal_divider_everywhere or observations.has_single_vertical_divider_everywhere) and observations.single_output_color is not None:
+    if (
+        observations.has_single_horizontal_divider_everywhere
+        or observations.has_single_vertical_divider_everywhere
+    ) and observations.single_output_color is not None:
         theories.extend(DIVIDER_THEORIES)
     if observations.grid_size_decreases and observations.single_shape_everywhere:
         theories.extend(SIZE_REDUCING_THEORIES)
-    if observations.has_enclosing_shapes_everywhere and observations.consistent_new_output_colors is not None and len(observations.consistent_new_output_colors) == 1:
+    if (
+        observations.has_enclosing_shapes_everywhere
+        and observations.consistent_new_output_colors is not None
+        and len(observations.consistent_new_output_colors) == 1
+    ):
         theories.append([change_enclosing_shapes_color])
     if observations.output_height_half_of_width_everywhere:
         theories.append([fill_with_increasing_rows])
