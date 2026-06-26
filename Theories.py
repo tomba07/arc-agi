@@ -110,7 +110,14 @@ def get_theories(observations: Observations) -> list[Theory]:
         and observations.shapes_collected
         and not observations.cell_count_by_color_identical_everywhere
     ):
-        theories.extend(RECOLOR_THEORIES)
+        removed = observations.consistent_removed_colors or set()
+        new_colors = observations.consistent_new_output_colors or set()
+        for from_color in removed:
+            for to_color in new_colors:
+                if from_color != to_color:
+                    theories.append([make_recolor_transformation(from_color, to_color)])
+        if not removed or not new_colors:
+            theories.extend(RECOLOR_THEORIES)
 
     # pattern / structural theories
     if (

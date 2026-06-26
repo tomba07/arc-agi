@@ -66,6 +66,7 @@ class Observations:
     all_inputs_only_two_by_twos: bool | None = None
     consistent_two_by_two_uni_ray_direction_by_color: dict[int, DiagonalDirection | None] | None = None
     consistent_new_output_colors: list[int] | None = None
+    consistent_removed_colors: set[int] | None = None
     two_new_output_colors_everywhere: bool | None = None
     enclosed_zero_shapes_everywhere: bool | None = None
     non_enclosed_zero_shapes_everywhere: bool | None = None
@@ -171,6 +172,11 @@ def check_color_sets(obs: Observations) -> None:
         if all(ex.new_output_colors == examples[0].new_output_colors for ex in examples)
         else None
     )
+    removed_per_example = [
+        set(np.unique(ex.input_grid)) - set(np.unique(ex.output_grid))
+        for ex in examples
+    ]
+    obs.consistent_removed_colors = removed_per_example[0].intersection(*removed_per_example[1:])
 
 
 def check_zero_shapes(obs: Observations) -> None:
