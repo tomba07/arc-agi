@@ -1,3 +1,4 @@
+import time
 import numpy as np
 
 from ArcProblem import ArcProblem
@@ -34,6 +35,7 @@ class ArcAgent:
     def make_predictions(self, arc_problem: ArcProblem) -> list[np.ndarray]:
         examples = self._extract_simplified_examples(arc_problem)
         test_input = arc_problem.test_set().get_input_data().data()
+        t_start = time.perf_counter()
 
         obs = initialize_observations(examples, test_input)
         tested_theories: set[tuple] = set()
@@ -45,8 +47,12 @@ class ArcAgent:
                 if key not in tested_theories:
                     tested_theories.add(key)
                     if self._validate_theory(theory, examples, obs):
-                        print(f"{arc_problem.problem_name()}: matched")
+                        time_spent = (time.perf_counter() - t_start) * 1000
+                        print(
+                            f"{arc_problem.problem_name()}: matched ({time_spent:.1f}ms)"
+                        )
                         return [apply_theory(theory, obs, None)]
 
-        print(f"{arc_problem.problem_name()}: no match")
+        time_spent = (time.perf_counter() - t_start) * 1000
+        print(f"{arc_problem.problem_name()}: no match ({time_spent:.1f}ms)")
         return []
