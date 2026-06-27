@@ -37,22 +37,26 @@ class ArcAgent:
         test_input = arc_problem.test_set().get_input_data().data()
         t_start = time.perf_counter()
 
-        obs = initialize_observations(examples, test_input)
+        observations = initialize_observations(examples, test_input)
         tested_theories: set[tuple] = set()
 
-        for check in OBSERVATION_CHECKS:
-            check(obs)
-            for theory in get_theories(obs):
+        for observation_check in OBSERVATION_CHECKS:
+            observation_check(observations)
+            for theory in get_theories(observations):
                 key = _theory_key(theory)
+
                 if key not in tested_theories:
                     tested_theories.add(key)
-                    if self._validate_theory(theory, examples, obs):
+
+                    if self._validate_theory(theory, examples, observations):
                         time_spent = (time.perf_counter() - t_start) * 1000
                         print(
                             f"{arc_problem.problem_name()}: matched ({time_spent:.1f}ms)"
                         )
-                        return [apply_theory(theory, obs, None)]
+
+                        return [apply_theory(theory, observations, None)]
 
         time_spent = (time.perf_counter() - t_start) * 1000
         print(f"{arc_problem.problem_name()}: no match ({time_spent:.1f}ms)")
+
         return []

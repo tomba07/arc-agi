@@ -135,7 +135,7 @@ def get_square_abstraction(shapes: list[Shape]) -> Shape | None:
     return None
 
 
-def _check_spaceship_shape(shapes: list[Shape], grid: Grid) -> Spaceship_Shape | None:
+def check_spaceship_shape(shapes: list[Shape], grid: Grid) -> Spaceship_Shape | None:
     if len(shapes) != 1:
         return None
     shape = shapes[0]
@@ -201,7 +201,7 @@ def _check_pyramid_shape_and_beam_color(
     return None if beam_color == shape.color else beam_color
 
 
-def _collect_opposing_same_color_single_cells(
+def collect_opposing_same_color_single_cells(
     shapes: list[Shape],
 ) -> list[tuple[Shape, Shape]]:
     single_cell_shapes = [s for s in shapes if s.width == 1 and s.height == 1]
@@ -241,7 +241,7 @@ def _collect_zero_cells(
     return cells
 
 
-def _get_zero_shapes(grid: Grid) -> list[Shape]:
+def get_zero_shapes(grid: Grid) -> list[Shape]:
     visited: set[tuple[int, int]] = set()
     zero_shapes = []
     for start_row in range(grid.shape[0]):
@@ -253,7 +253,7 @@ def _get_zero_shapes(grid: Grid) -> list[Shape]:
     return zero_shapes
 
 
-def _get_enclosed_shapes(shapes: list[Shape], grid_shape: tuple[int, int]) -> list[Shape]:
+def get_enclosed_shapes(shapes: list[Shape], grid_shape: tuple[int, int]) -> list[Shape]:
     max_row, max_col = grid_shape[0] - 1, grid_shape[1] - 1
     return [
         s for s in shapes
@@ -261,7 +261,7 @@ def _get_enclosed_shapes(shapes: list[Shape], grid_shape: tuple[int, int]) -> li
     ]
 
 
-def _get_non_enclosed_shapes(shapes: list[Shape], grid_shape: tuple[int, int]) -> list[Shape]:
+def get_non_enclosed_shapes(shapes: list[Shape], grid_shape: tuple[int, int]) -> list[Shape]:
     max_row, max_col = grid_shape[0] - 1, grid_shape[1] - 1
     return [
         s for s in shapes
@@ -269,7 +269,7 @@ def _get_non_enclosed_shapes(shapes: list[Shape], grid_shape: tuple[int, int]) -
     ]
 
 
-def _shape_encloses_cells(shape: Shape, grid: Grid) -> bool:
+def shape_encloses_cells(shape: Shape, grid: Grid) -> bool:
     rows, cols = grid.shape
     shape_cell_set = shape.cells
     visited = set()

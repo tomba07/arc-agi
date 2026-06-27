@@ -11,12 +11,12 @@ from Shapes import (
     get_shapes,
     get_color_strict_shapes,
     get_square_abstraction,
-    _check_spaceship_shape,
-    _collect_opposing_same_color_single_cells,
-    _get_zero_shapes,
-    _get_enclosed_shapes,
-    _get_non_enclosed_shapes,
-    _shape_encloses_cells,
+    check_spaceship_shape,
+    collect_opposing_same_color_single_cells,
+    get_zero_shapes,
+    get_enclosed_shapes,
+    get_non_enclosed_shapes,
+    shape_encloses_cells,
 )
 
 
@@ -181,14 +181,14 @@ def check_color_sets(obs: Observations) -> None:
 
 def check_zero_shapes(obs: Observations) -> None:
     for ex in obs.example_observations:
-        zero_shapes = _get_zero_shapes(ex.input_grid)
-        ex.enclosed_zero_shapes = _get_enclosed_shapes(zero_shapes, ex.input_grid.shape)
-        ex.non_enclosed_zero_shapes = _get_non_enclosed_shapes(zero_shapes, ex.input_grid.shape)
+        zero_shapes = get_zero_shapes(ex.input_grid)
+        ex.enclosed_zero_shapes = get_enclosed_shapes(zero_shapes, ex.input_grid.shape)
+        ex.non_enclosed_zero_shapes = get_non_enclosed_shapes(zero_shapes, ex.input_grid.shape)
 
     test = obs.test_observations
-    test_zero_shapes = _get_zero_shapes(test.input_grid)
-    test.enclosed_zero_shapes = _get_enclosed_shapes(test_zero_shapes, test.input_grid.shape)
-    test.non_enclosed_zero_shapes = _get_non_enclosed_shapes(test_zero_shapes, test.input_grid.shape)
+    test_zero_shapes = get_zero_shapes(test.input_grid)
+    test.enclosed_zero_shapes = get_enclosed_shapes(test_zero_shapes, test.input_grid.shape)
+    test.non_enclosed_zero_shapes = get_non_enclosed_shapes(test_zero_shapes, test.input_grid.shape)
 
     obs.enclosed_zero_shapes_everywhere = all(
         len(ex.enclosed_zero_shapes) > 0 for ex in obs.example_observations
@@ -243,12 +243,12 @@ def check_square_abstraction(obs: Observations) -> None:
 
 def check_opposing_cells(obs: Observations) -> None:
     for ex in obs.example_observations:
-        ex.opposing_same_color_single_cells = _collect_opposing_same_color_single_cells(
+        ex.opposing_same_color_single_cells = collect_opposing_same_color_single_cells(
             ex.input_shapes
         )
 
     test = obs.test_observations
-    test.opposing_same_color_single_cells = _collect_opposing_same_color_single_cells(
+    test.opposing_same_color_single_cells = collect_opposing_same_color_single_cells(
         test.input_shapes
     )
 
@@ -259,10 +259,10 @@ def check_opposing_cells(obs: Observations) -> None:
 
 def check_spaceship(obs: Observations) -> None:
     for ex in obs.example_observations:
-        ex.spaceship_shape = _check_spaceship_shape(ex.input_shapes, ex.input_grid)
+        ex.spaceship_shape = check_spaceship_shape(ex.input_shapes, ex.input_grid)
 
     test = obs.test_observations
-    test.spaceship_shape = _check_spaceship_shape(test.input_shapes, test.input_grid)
+    test.spaceship_shape = check_spaceship_shape(test.input_shapes, test.input_grid)
 
     obs.has_spaceship_shape_everywhere = (
         all(ex.spaceship_shape is not None for ex in obs.example_observations)
@@ -401,7 +401,7 @@ def check_enclosing_shapes(obs: Observations) -> None:
         for shape in example_observations.input_color_strict_shapes:
             if shape.color == bg_color:
                 continue
-            if _shape_encloses_cells(shape, grid):
+            if shape_encloses_cells(shape, grid):
                 example_observations.enclosing_shapes.append(shape)
                 for s in example_observations.input_shapes:
                     if s.cells & shape.cells:
