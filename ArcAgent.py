@@ -3,15 +3,14 @@ import numpy as np
 
 from ArcProblem import ArcProblem
 from Transformations import Theory
-from Observations import Observations, initialize_observations
+from Observations import Observations, ExampleObservations, initialize_observations
 from Theories import ALL_THEORIES
 
 
-def apply_theory(theory: Theory, observations: Observations, example_index: int | None) -> np.ndarray:
-    grid = observations.test_observations.input_grid.copy() if example_index is None \
-        else observations.example_observations[example_index].input_grid.copy()
+def apply_theory(theory: Theory, observations: Observations, example: ExampleObservations) -> np.ndarray:
+    grid = example.input_grid.copy()
     for fn in theory:
-        grid = fn(grid, observations, example_index)
+        grid = fn(grid, observations, example)
     return grid
 
 
@@ -37,7 +36,7 @@ def make_predictions(arc_problem: ArcProblem) -> list[np.ndarray]:
 
         try:
             matched = all(
-                np.array_equal(apply_theory(theory.transforms, observations, i), out)
+                np.array_equal(apply_theory(theory.transforms, observations, observations.example_observations[i]), out)
                 for i, (_, out) in enumerate(examples)
             )
         except Exception:
@@ -46,7 +45,7 @@ def make_predictions(arc_problem: ArcProblem) -> list[np.ndarray]:
         if matched:
             time_spent = (time.perf_counter() - t_start) * 1000
             print(f"{arc_problem.problem_name()}: matched '{theory.name}' ({time_spent:.1f}ms)")
-            return [apply_theory(theory.transforms, observations, None)]
+            return [apply_theory(theory.transforms, observations, observations.test_observations)]
 
     time_spent = (time.perf_counter() - t_start) * 1000
     print(f"{arc_problem.problem_name()}: no match ({time_spent:.1f}ms)")

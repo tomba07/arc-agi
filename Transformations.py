@@ -3,21 +3,15 @@ from typing import Callable
 import numpy as np
 
 from Shapes import Shape, Grid
-from Observations import Observations
+from Observations import Observations, ExampleObservations
 from Enums import Direction, DiagonalDirection, AxisDirection, LogicalOperation
 
-Transform = Callable[[Grid, Observations, int | None], Grid]
+Transform = Callable[[Grid, Observations, ExampleObservations], Grid]
 Theory = list[Transform]
 
 
-def _get_example(observations: Observations, example_index: int | None):
-    if example_index is None:
-        return observations.test_observations
-    return observations.example_observations[example_index]
-
-
-def _get_shapes(observations: Observations, example_index: int | None) -> list[Shape]:
-    return _get_example(observations, example_index).input_shapes or []
+def _get_shapes(example: ExampleObservations) -> list[Shape]:
+    return example.input_shapes or []
 
 
 _DIAGONAL_DELTA: dict[DiagonalDirection, tuple[int, int]] = {
@@ -39,7 +33,7 @@ def _cast_ray(
 
 
 def make_rotation(k: int) -> Transform:
-    def fn(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
+    def fn(grid: Grid, observations: Observations, example: ExampleObservations) -> Grid:
         return np.rot90(grid, k=k)
     return fn
 
@@ -50,26 +44,26 @@ rotate_270 = make_rotation(3)
 
 
 def transpose(
-    grid: Grid, observations: Observations, example_index: int | None
+    grid: Grid, observations: Observations, example: ExampleObservations
 ) -> Grid:
     return grid.T
 
 
 def mirror_across_horizontal_axis(
-    grid: Grid, observations: Observations, example_index: int | None
+    grid: Grid, observations: Observations, example: ExampleObservations
 ) -> Grid:
     return np.maximum(grid, np.flipud(grid))
 
 
 def make_recolor_transformation(from_color: int, to_color: int) -> Transform:
-    def fn(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
+    def fn(grid: Grid, observations: Observations, example: ExampleObservations) -> Grid:
         return np.where(grid == from_color, to_color, grid)
 
     return fn
 
 
 def swap_colors(
-    grid: Grid, observations: Observations, example_index: int | None
+    grid: Grid, observations: Observations, example: ExampleObservations
 ) -> Grid:
     colors = sorted(set(np.unique(grid)) - {0})
     if len(colors) != 2:
@@ -79,9 +73,9 @@ def swap_colors(
 
 
 def crop_to_content(
-    grid: Grid, observations: Observations, example_index: int | None
+    grid: Grid, observations: Observations, example: ExampleObservations
 ) -> Grid:
-    shapes = _get_shapes(observations, example_index)
+    shapes = _get_shapes(example)
     if not shapes:
         return grid
     min_row = min(s.row for s in shapes)
@@ -92,9 +86,9 @@ def crop_to_content(
 
 
 def make_hollow(
-    grid: Grid, observations: Observations, example_index: int | None
+    grid: Grid, observations: Observations, example: ExampleObservations
 ) -> Grid:
-    shapes = _get_shapes(observations, example_index)
+    shapes = _get_shapes(example)
     all_cells = set(cell for s in shapes for cell in s.cells)
     result = grid.copy()
     for row, col in all_cells:
@@ -105,7 +99,7 @@ def make_hollow(
 
 
 def make_spiral_transformation(color: int) -> Transform:
-    def fn(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
+    def fn(grid: Grid, observations: Observations, example: ExampleObservations) -> Grid:
         grid = grid.copy()
         grid.fill(color)
         max_row, max_col = grid.shape
@@ -141,9 +135,8 @@ def make_spiral_transformation(color: int) -> Transform:
 
 
 def crop_to_square_abstraction(
-    grid: Grid, observations: Observations, example_index: int | None
+    grid: Grid, observations: Observations, example: ExampleObservations
 ) -> Grid:
-    example = _get_example(observations, example_index)
     input_square_abstraction = example.input_square_abstraction
 
     if input_square_abstraction is None:
@@ -160,9 +153,8 @@ def crop_to_square_abstraction(
 
 
 def recolor_to_square_abstraction(
-    grid: Grid, observations: Observations, example_index: int | None
+    grid: Grid, observations: Observations, example: ExampleObservations
 ) -> Grid:
-    example = _get_example(observations, example_index)
     input_square_abstraction = example.input_square_abstraction
 
     if input_square_abstraction is None:
@@ -173,13 +165,13 @@ def recolor_to_square_abstraction(
 
 
 def cast_uni_ray_from_two_by_twos(
-    grid: Grid, observations: Observations, example_index: int | None
+    grid: Grid, observations: Observations, example: ExampleObservations
 ) -> Grid:
     consistent_direction = observations.consistent_two_by_two_uni_ray_direction_by_color
     if observations.all_inputs_only_two_by_twos is not True or consistent_direction is None:
         return grid
 
-    shapes = _get_shapes(observations, example_index)
+    shapes = _get_shapes(example)
     result = grid.copy()
     for shape in shapes:
         direction = consistent_direction.get(shape.color)
@@ -193,7 +185,7 @@ def cast_uni_ray_from_two_by_twos(
 
 
 def make_recolor_by_enclosure_transformation(flip_colors: bool = False) -> Transform:
-    def fn(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
+    def fn(grid: Grid, observations: Observations, example: ExampleObservations) -> Grid:
         colors = observations.consistent_new_output_colors
         if colors is None or len(colors) != 2:
             return grid
@@ -201,7 +193,6 @@ def make_recolor_by_enclosure_transformation(flip_colors: bool = False) -> Trans
         enclosed_color, non_enclosed_color = (
             (color_b, color_a) if flip_colors else (color_a, color_b)
         )
-        example = _get_example(observations, example_index)
         result = grid.copy()
         for shape in example.enclosed_zero_shapes:
             for cell in shape.cells:
@@ -217,8 +208,7 @@ def make_recolor_by_enclosure_transformation(flip_colors: bool = False) -> Trans
 def make_arrange_colored_cells_transformations(
     direction: AxisDirection, increasing: bool = True
 ) -> Transform:
-    def fn(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
-        example = _get_example(observations, example_index)
+    def fn(grid: Grid, observations: Observations, example: ExampleObservations) -> Grid:
         cell_count_by_color = example.input_cell_count_by_color
 
         if cell_count_by_color is None:
@@ -251,9 +241,8 @@ def make_arrange_colored_cells_transformations(
 
 
 def connect_same_color_opposing_cells(
-    grid: Grid, observations: Observations, example_index: int | None
+    grid: Grid, observations: Observations, example: ExampleObservations
 ) -> Grid:
-    example = _get_example(observations, example_index)
     opposing_cells = example.opposing_same_color_single_cells
 
     if not opposing_cells:
@@ -276,9 +265,9 @@ def connect_same_color_opposing_cells(
 
 
 def create_beam_from_spaceship_tip(
-    grid: Grid, observations: Observations, example_index: int | None
+    grid: Grid, observations: Observations, example: ExampleObservations
 ) -> Grid:
-    spaceship_shape = _get_example(observations, example_index).spaceship_shape
+    spaceship_shape = example.spaceship_shape
     if spaceship_shape is None:
         return grid
 
@@ -297,7 +286,7 @@ def create_beam_from_spaceship_tip(
 
 
 def mirror_horizontally_and_vertically(
-    grid: Grid, observations: Observations, example_index: int | None
+    grid: Grid, observations: Observations, example: ExampleObservations
 ) -> Grid:
     top = np.hstack([grid, np.fliplr(grid)])
     bottom = np.hstack([np.flipud(grid), np.flipud(np.fliplr(grid))])
@@ -305,8 +294,7 @@ def mirror_horizontally_and_vertically(
 
 
 def make_divider_operation(operation: LogicalOperation) -> Transform:
-    def fn(grid: Grid, observations: Observations, example_index: int | None) -> Grid:
-        example = _get_example(observations, example_index)
+    def fn(grid: Grid, observations: Observations, example: ExampleObservations) -> Grid:
         if not example.single_horizontal_divider and not example.single_vertical_divider:
             return grid
         output_color = observations.single_output_color or 3
@@ -342,9 +330,8 @@ def _perform_logical_operation(
 
 
 def change_enclosing_shapes_color(
-    grid: Grid, observations: Observations, example_index: int | None
+    grid: Grid, observations: Observations, example: ExampleObservations
 ) -> Grid:
-    example = _get_example(observations, example_index)
     color = next(iter(observations.consistent_new_output_colors), None)
     if not example.enclosing_shapes or color is None:
         return grid
@@ -357,7 +344,7 @@ def change_enclosing_shapes_color(
 
 
 def fill_with_increasing_rows(
-    grid: Grid, observations: Observations, example_index: int | None
+    grid: Grid, observations: Observations, example: ExampleObservations
 ) -> Grid:
     cols = grid.shape[1]
     filled_cols = int(np.count_nonzero(grid[0]))
