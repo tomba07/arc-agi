@@ -3,8 +3,8 @@ import numpy as np
 
 from ArcProblem import ArcProblem
 from Transformations import apply_theory
-from Observations import initialize_observations, OBSERVATION_CHECKS
-from Theories import TheoryDef, get_theories
+from Observations import initialize_observations
+from Theories import TheoryDef, ALL_THEORIES
 
 
 class ArcAgent:
@@ -34,21 +34,23 @@ class ArcAgent:
         t_start = time.perf_counter()
 
         observations = initialize_observations(examples, test_input)
-        tested_theories: set[str] = set()
+        completed_observations: set = set()
+        completed_theories: set[str] = set()
 
-        for observation_check in OBSERVATION_CHECKS:
-            observation_check(observations)
-            for theory in get_theories(observations):
-                if theory.name not in tested_theories:
-                    tested_theories.add(theory.name)
+        for theory in ALL_THEORIES:
+            for check in theory.required_checks:
+                if check not in completed_observations:
+                    check(observations)
+                    completed_observations.add(check)
 
-                    if self._validate_theory(theory, examples, observations):
-                        time_spent = (time.perf_counter() - t_start) * 1000
-                        print(
-                            f"{arc_problem.problem_name()}: matched '{theory.name}' ({time_spent:.1f}ms)"
-                        )
+            if theory.name in completed_theories or not theory.condition(observations):
+                continue
 
-                        return [apply_theory(theory.transforms, observations, None)]
+            completed_theories.add(theory.name)
+            if self._validate_theory(theory, examples, observations):
+                time_spent = (time.perf_counter() - t_start) * 1000
+                print(f"{arc_problem.problem_name()}: matched '{theory.name}' ({time_spent:.1f}ms)")
+                return [apply_theory(theory.transforms, observations, None)]
 
         time_spent = (time.perf_counter() - t_start) * 1000
         print(f"{arc_problem.problem_name()}: no match ({time_spent:.1f}ms)")
