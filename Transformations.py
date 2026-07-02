@@ -507,3 +507,55 @@ def connect_similar_shapes(
                         result[r, center_col] = new_color
 
     return result
+
+
+def put_shapes_into_bottom_gaps(
+    grid: Grid, observations: Observations, example: ExampleObservations
+) -> Grid:
+    max_row = grid.shape[0] - 1
+    result = grid.copy()
+    gaps = example.bottom_gaps
+    count_consistent = len(example.input_shapes) - 1 != len(gaps)
+
+    if not observations.bottom_gaps_everywhere or count_consistent:
+        return grid
+
+    for shape in example.input_shapes:
+        is_bottom = shape.row + shape.height - 1 == max_row
+
+        if not is_bottom:
+            original_cells = shape.cells
+
+            if shape.height != 2:
+                if shape.width == 2:
+                    shape = Shape(
+                        row=shape.row,
+                        col=shape.col,
+                        width=shape.height,
+                        height=shape.width,
+                        cells=shape.cells,
+                        color=shape.color,
+                    )
+                else:
+                    continue
+
+            for gap_row, gap_col_start, gap_col_end in gaps:
+                gap_width = gap_col_end - gap_col_start + 1
+
+                if shape.width == gap_width:
+                    # add the shape to the gap in the result grid
+                    for r in range(shape.height):
+                        for c in range(shape.width):
+                            result[
+                                gap_row - shape.height + r + 1, gap_col_start + c
+                            ] = shape.color
+
+                    # remove the gap from the list of gaps
+                    gaps.remove((gap_row, gap_col_start, gap_col_end))
+
+                    # remove the original shape from the result grid
+                    for row, col in original_cells:
+                        result[row, col] = 0
+                    break
+
+    return result

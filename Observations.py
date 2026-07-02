@@ -56,6 +56,7 @@ class ExampleObservations:
     output_color_strict_shapes: list[Shape] | None = None
     input_diagonal_shapes: list[Shape] | None = None
     output_height_half_of_width: bool = False
+    bottom_gaps: list[tuple[int, int, int]] | None = None
 
 
 @dataclass
@@ -91,6 +92,7 @@ class Observations:
     output_height_half_of_width_everywhere: bool | None = None
     is_recolor_context: bool | None = None
     only_similar_input_shapes: bool | None = None
+    bottom_gaps_everywhere: bool | None = None
 
 
 ObservationCheck = Callable[["Observations"], None]
@@ -547,3 +549,49 @@ def check_only_similar_input_shapes(observations: Observations) -> None:
         first_shape = all_shapes[0]
         if all(first_shape.is_similar_to(shape) for shape in all_shapes):
             observations.only_similar_input_shapes = True
+
+
+def check_bottom_gaps(observations: Observations) -> None:
+    if not observations.shapes_collected:
+        collect_shapes(observations)
+
+    def collect_bottom_gaps(example: ExampleObservations) -> None:
+        rows, cols = example.input_grid.shape
+        max_row = rows - 1
+
+        for shape in example.input_shapes:
+            # shape has to be at bottom of grid, cover full width and have gaps with depth of 1 at top
+            is_bottom = shape.row + shape.height - 1 == max_row
+            full_width = shape.width == cols
+            # there should be some 0 cells at the top of the shape
+            has_top_gap = any(
+                example.input_grid[shape.row - 1, col] == 0
+                for col in range(shape.col, shape.col + shape.width)
+            )
+
+            if is_bottom and full_width and has_top_gap:
+                # collect gaps with their widths
+                gaps = []
+                col = shape.col
+                while col < shape.col + shape.width:
+                    if example.input_grid[shape.row, col] == 0:
+                        gap_start = col
+                        while col < shape.col + shape.width and example.input_grid[shape.row, col] == 0:
+                            col += 1
+                        gap_end = col - 1
+                        gaps.append((shape.row, gap_start, gap_end))
+                    else:
+                        col += 1
+                # store gaps in example observations
+                example.bottom_gaps = gaps
+
+    for example in observations.example_observations:
+        collect_bottom_gaps(example)
+
+    # do same for test input
+    collect_bottom_gaps(observations.test_observations)
+
+    observations.bottom_gaps_everywhere = (
+        all(ex.bottom_gaps and len(ex.bottom_gaps) > 0 for ex in observations.example_observations)
+        and observations.test_observations.bottom_gaps and len(observations.test_observations.bottom_gaps) > 0
+    )

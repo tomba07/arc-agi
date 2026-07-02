@@ -6,6 +6,7 @@ from Transformations import (
     connect_similar_shapes,
     fill_enclosing_shapes_with_dominant_color,
     make_implicit_divider_operation,
+    put_shapes_into_bottom_gaps,
     remove_non_enclosed_single_cells,
     rotate_90,
     rotate_180,
@@ -32,6 +33,7 @@ from Transformations import (
 from Observations import (
     Observations,
     ObservationCheck,
+    check_bottom_gaps,
     check_grid_sizes,
     check_implicit_color_dividers,
     check_only_similar_input_shapes,
@@ -280,6 +282,12 @@ ALL_THEORIES: list[TheoryDef] = [
         lambda observations: bool(observations.only_similar_input_shapes),
         [connect_similar_shapes],
         [collect_shapes, check_only_similar_input_shapes, check_color_sets],
+    ),
+    TheoryDef(
+        "put_shapes_in_bottom_gaps",
+        lambda observations: bool(observations.bottom_gaps_everywhere),
+        [put_shapes_into_bottom_gaps],
+        [collect_shapes, check_bottom_gaps],
     ),
 ]
 
