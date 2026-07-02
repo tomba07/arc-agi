@@ -6,16 +6,16 @@ import numpy as np
 from ArcData import ArcData
 from ArcProblem import ArcProblem
 from ArcSet import ArcSet
-from ArcAgent import ArcAgent
+from ArcAgent import make_predictions
 
-def run_training_data(agent: ArcAgent, arc_problems: list[ArcProblem]) -> dict[ArcProblem, tuple[bool, list]]:
+def run_training_data(arc_problems: list[ArcProblem]) -> dict[ArcProblem, tuple[bool, list]]:
     """
     Run each training problem with the test output included so the agent can
     test if they are getting the correct response.
     """
     train_ans_dict: dict[ArcProblem, tuple[bool, list]] = dict()
     for trn_problem in arc_problems:
-        preds: list[np.ndarray] = agent.make_predictions(trn_problem)
+        preds: list[np.ndarray] = make_predictions(trn_problem)
         correct = False
 
         if len(preds) <= 3:
@@ -68,10 +68,7 @@ if __name__ == "__main__":
 
     arc_milestone_problems: list[ArcProblem] = load_arc_problems(milestone_path, milestone_data)
 
-    # instantiate the agent once
-    arc_agent: ArcAgent = ArcAgent()
-
-    milestone_data_set = run_training_data(arc_agent, arc_milestone_problems)
+    milestone_data_set = run_training_data(arc_milestone_problems)
     milestone_file = open('Milestone_Results.csv', 'w')
     milestone_file.write("Problem Name, Correct, Correct Answer, Prediction 1, Prediction 2, Prediction 3\n")
     for m_answer_set in milestone_data_set.keys():

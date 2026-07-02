@@ -20,17 +20,6 @@ def _get_shapes(observations: Observations, example_index: int | None) -> list[S
     return _get_example(observations, example_index).input_shapes or []
 
 
-def apply_theory(
-    theory: Theory,
-    observations: Observations,
-    example_index: int | None,
-) -> Grid:
-    grid = _get_example(observations, example_index).input_grid.copy()
-    for fn in theory:
-        grid = fn(grid, observations, example_index)
-    return grid
-
-
 _DIAGONAL_DELTA: dict[DiagonalDirection, tuple[int, int]] = {
     DiagonalDirection.TL: (-1, -1),
     DiagonalDirection.TR: (-1, +1),
