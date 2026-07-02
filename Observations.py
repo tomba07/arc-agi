@@ -65,7 +65,7 @@ class Observations:
     input_square_abstraction_everywhere: bool | None = None
     all_inputs_only_two_by_twos: bool | None = None
     consistent_two_by_two_uni_ray_direction_by_color: dict[int, DiagonalDirection | None] | None = None
-    consistent_new_output_colors: list[int] | None = None
+    consistent_new_output_colors: set[int] | None = None
     consistent_removed_colors: set[int] | None = None
     two_new_output_colors_everywhere: bool | None = None
     enclosed_zero_shapes_everywhere: bool | None = None
