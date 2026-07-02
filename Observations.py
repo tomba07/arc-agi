@@ -402,7 +402,9 @@ def check_enclosing_shapes(obs: Observations) -> None:
         for shape in example_observations.input_color_strict_shapes:
             if shape.color == bg_color:
                 continue
-            if shape_encloses_cells(shape, grid):
+            enclosed_cells = shape_encloses_cells(shape, grid)
+            if enclosed_cells:
+                shape.enclosed_cells = enclosed_cells
                 example_observations.enclosing_shapes.append(shape)
                 for s in example_observations.input_shapes:
                     if s.cells & shape.cells:

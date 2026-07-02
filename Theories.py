@@ -3,6 +3,8 @@ from typing import Callable
 
 from Transformations import (
     Theory,
+    fill_enclosing_shapes_with_dominant_color,
+    remove_non_enclosed_single_cells,
     rotate_90,
     rotate_180,
     rotate_270,
@@ -73,13 +75,17 @@ ALL_THEORIES: list[TheoryDef] = [
     ),
     TheoryDef(
         "connect_opposing_cells",
-        lambda observations: bool(observations.has_opposing_same_color_single_cells_everywhere),
+        lambda observations: bool(
+            observations.has_opposing_same_color_single_cells_everywhere
+        ),
         [connect_same_color_opposing_cells],
         [collect_shapes, check_opposing_cells],
     ),
     TheoryDef(
         "cast_uni_ray",
-        lambda observations: bool(observations.consistent_two_by_two_uni_ray_direction_by_color),
+        lambda observations: bool(
+            observations.consistent_two_by_two_uni_ray_direction_by_color
+        ),
         [cast_uni_ray_from_two_by_twos],
         [collect_shapes, check_two_by_two_rays],
     ),
@@ -89,12 +95,13 @@ ALL_THEORIES: list[TheoryDef] = [
         [create_beam_from_spaceship_tip],
         [collect_shapes, check_spaceship],
     ),
-
     # same-size geometric transforms
     *[
         TheoryDef(
             name,
-            lambda observations: bool(observations.grid_size_stays_identical and observations.shapes_collected),
+            lambda observations: bool(
+                observations.grid_size_stays_identical and observations.shapes_collected
+            ),
             transforms,
             [check_grid_sizes, collect_shapes],
         )
@@ -109,7 +116,6 @@ ALL_THEORIES: list[TheoryDef] = [
             ("transpose", [transpose]),
         ]
     ],
-
     # size-changing theories
     TheoryDef(
         "crop_to_content",
@@ -119,7 +125,9 @@ ALL_THEORIES: list[TheoryDef] = [
     ),
     TheoryDef(
         "crop_to_content_and_swap",
-        lambda observations: bool(observations.grid_size_decreases and observations.single_shape_everywhere),
+        lambda observations: bool(
+            observations.grid_size_decreases and observations.single_shape_everywhere
+        ),
         [crop_to_content, swap_colors],
         [check_grid_sizes, collect_shapes],
     ),
@@ -142,7 +150,6 @@ ALL_THEORIES: list[TheoryDef] = [
         for direction in AxisDirection
         for increasing in (True, False)
     ],
-
     # structural / divider theories
     *[
         TheoryDef(
@@ -159,12 +166,13 @@ ALL_THEORIES: list[TheoryDef] = [
         )
         for op in LogicalOperation
     ],
-
     # color theories
     *[
         TheoryDef(
             f"spiral_color_{color}",
-            lambda observations, c=color: bool(observations.all_inputs_empty and observations.single_output_color == c),
+            lambda observations, c=color: bool(
+                observations.all_inputs_empty and observations.single_output_color == c
+            ),
             [make_spiral_transformation(color)],
             [collect_shapes, check_color_sets],
         )
@@ -218,7 +226,6 @@ ALL_THEORIES: list[TheoryDef] = [
         [change_enclosing_shapes_color],
         [check_color_sets, collect_shapes, check_enclosing_shapes],
     ),
-
     # recolor pair theories — broadest fallback, checked last
     *[
         TheoryDef(
@@ -241,6 +248,12 @@ ALL_THEORIES: list[TheoryDef] = [
         for to_color in ARC_COLORS
         if from_color != to_color
     ],
+    TheoryDef(
+        "fill_enclosing_shapes_with_dominant_color",
+        lambda observations: bool(observations.has_enclosing_shapes_everywhere),
+        [fill_enclosing_shapes_with_dominant_color, remove_non_enclosed_single_cells],
+        [collect_shapes, check_enclosing_shapes],
+    ),
 ]
 
 

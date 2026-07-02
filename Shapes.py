@@ -23,6 +23,7 @@ class Shape:
     color: int | None = None
     is_two_by_two: bool = False
     encloses_cells: bool = False
+    enclosed_cells: set[tuple[int, int]] | None = None
 
 
 @dataclass
@@ -269,7 +270,7 @@ def get_non_enclosed_shapes(shapes: list[Shape], grid_shape: tuple[int, int]) ->
     ]
 
 
-def shape_encloses_cells(shape: Shape, grid: Grid) -> bool:
+def shape_encloses_cells(shape: Shape, grid: Grid) -> set[tuple[int, int]]:
     rows, cols = grid.shape
     shape_cell_set = shape.cells
     visited = set()
@@ -292,4 +293,7 @@ def shape_encloses_cells(shape: Shape, grid: Grid) -> bool:
             continue
         visited.add((r, c))
         queue.extend([(r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)])
-    return len(visited) < rows * cols - len(shape_cell_set)
+    
+    cells_without_shape = {(r, c) for r in range(rows) for c in range(cols)} - shape_cell_set
+    
+    return cells_without_shape - visited

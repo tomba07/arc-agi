@@ -33,8 +33,11 @@ def _cast_ray(
 
 
 def make_rotation(k: int) -> Transform:
-    def fn(grid: Grid, observations: Observations, example: ExampleObservations) -> Grid:
+    def fn(
+        grid: Grid, observations: Observations, example: ExampleObservations
+    ) -> Grid:
         return np.rot90(grid, k=k)
+
     return fn
 
 
@@ -56,7 +59,9 @@ def mirror_across_horizontal_axis(
 
 
 def make_recolor_transformation(from_color: int, to_color: int) -> Transform:
-    def fn(grid: Grid, observations: Observations, example: ExampleObservations) -> Grid:
+    def fn(
+        grid: Grid, observations: Observations, example: ExampleObservations
+    ) -> Grid:
         return np.where(grid == from_color, to_color, grid)
 
     return fn
@@ -99,7 +104,9 @@ def make_hollow(
 
 
 def make_spiral_transformation(color: int) -> Transform:
-    def fn(grid: Grid, observations: Observations, example: ExampleObservations) -> Grid:
+    def fn(
+        grid: Grid, observations: Observations, example: ExampleObservations
+    ) -> Grid:
         grid = grid.copy()
         grid.fill(color)
         max_row, max_col = grid.shape
@@ -168,7 +175,10 @@ def cast_uni_ray_from_two_by_twos(
     grid: Grid, observations: Observations, example: ExampleObservations
 ) -> Grid:
     consistent_direction = observations.consistent_two_by_two_uni_ray_direction_by_color
-    if observations.all_inputs_only_two_by_twos is not True or consistent_direction is None:
+    if (
+        observations.all_inputs_only_two_by_twos is not True
+        or consistent_direction is None
+    ):
         return grid
 
     shapes = _get_shapes(example)
@@ -185,7 +195,9 @@ def cast_uni_ray_from_two_by_twos(
 
 
 def make_recolor_by_enclosure_transformation(flip_colors: bool = False) -> Transform:
-    def fn(grid: Grid, observations: Observations, example: ExampleObservations) -> Grid:
+    def fn(
+        grid: Grid, observations: Observations, example: ExampleObservations
+    ) -> Grid:
         colors = observations.consistent_new_output_colors
         if colors is None or len(colors) != 2:
             return grid
@@ -208,7 +220,9 @@ def make_recolor_by_enclosure_transformation(flip_colors: bool = False) -> Trans
 def make_arrange_colored_cells_transformations(
     direction: AxisDirection, increasing: bool = True
 ) -> Transform:
-    def fn(grid: Grid, observations: Observations, example: ExampleObservations) -> Grid:
+    def fn(
+        grid: Grid, observations: Observations, example: ExampleObservations
+    ) -> Grid:
         cell_count_by_color = example.input_cell_count_by_color
 
         if cell_count_by_color is None:
@@ -294,16 +308,26 @@ def mirror_horizontally_and_vertically(
 
 
 def make_divider_operation(operation: LogicalOperation) -> Transform:
-    def fn(grid: Grid, observations: Observations, example: ExampleObservations) -> Grid:
-        if not example.single_horizontal_divider and not example.single_vertical_divider:
+    def fn(
+        grid: Grid, observations: Observations, example: ExampleObservations
+    ) -> Grid:
+        if (
+            not example.single_horizontal_divider
+            and not example.single_vertical_divider
+        ):
             return grid
         output_color = observations.single_output_color or 3
         if example.single_horizontal_divider:
             mid = grid.shape[0] // 2
-            return _perform_logical_operation(grid[:mid, :], grid[mid + 1:, :], operation, output_color)
+            return _perform_logical_operation(
+                grid[:mid, :], grid[mid + 1 :, :], operation, output_color
+            )
         else:
             mid = grid.shape[1] // 2
-            return _perform_logical_operation(grid[:, :mid], grid[:, mid + 1:], operation, output_color)
+            return _perform_logical_operation(
+                grid[:, :mid], grid[:, mid + 1 :], operation, output_color
+            )
+
     return fn
 
 
@@ -355,4 +379,53 @@ def fill_with_increasing_rows(
     result = np.zeros((rows, cols), dtype=int)
     for i in range(rows):
         result[i, : filled_cols + i] = color
+    return result
+
+
+def fill_enclosing_shapes_with_dominant_color(
+    grid: Grid, observations: Observations, example: ExampleObservations
+) -> Grid:
+    result = grid.copy()
+
+    for enclosing_shape in example.enclosing_shapes:
+        if not enclosing_shape.enclosed_cells:
+            continue
+
+        color_counts: dict[int, int] = {}
+
+        for cell in enclosing_shape.enclosed_cells:
+            color = grid[cell]
+            if color != 0:
+                color_counts[color] = color_counts.get(color, 0) + 1
+
+        if not color_counts:
+            continue
+
+        dominant_color = max(color_counts, key=lambda c: color_counts[c])
+
+        for cell in enclosing_shape.enclosed_cells:
+            result[cell] = dominant_color
+
+    return result
+
+
+def remove_non_enclosed_single_cells(
+    grid: Grid, observations: Observations, example: ExampleObservations
+) -> Grid:
+    result = grid.copy()
+
+    all_enclosed_cells = set()
+    single_cells = set()
+
+    for s in example.enclosing_shapes:
+        all_enclosed_cells |= s.enclosed_cells
+
+    for s in example.input_color_strict_shapes:
+        if len(s.cells) == 1:
+            single_cells |= s.cells
+
+    for cell in single_cells:
+        if cell not in all_enclosed_cells:
+            result[cell] = 0
+
     return result
