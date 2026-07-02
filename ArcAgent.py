@@ -2,13 +2,9 @@ import time
 import numpy as np
 
 from ArcProblem import ArcProblem
-from Transformations import Theory, apply_theory
+from Transformations import apply_theory
 from Observations import initialize_observations, OBSERVATION_CHECKS
-from Theories import get_theories
-
-
-def _theory_key(theory: Theory) -> tuple:
-    return tuple(id(fn) for fn in theory)
+from Theories import TheoryDef, get_theories
 
 
 class ArcAgent:
@@ -23,10 +19,10 @@ class ArcAgent:
             for example in arc_problem.training_set()
         ]
 
-    def _validate_theory(self, theory: Theory, examples, obs) -> bool:
+    def _validate_theory(self, theory: TheoryDef, examples, observations) -> bool:
         try:
             return all(
-                np.array_equal(apply_theory(theory, obs, i), out)
+                np.array_equal(apply_theory(theory.transforms, observations, i), out)
                 for i, (_, out) in enumerate(examples)
             )
         except Exception:
@@ -38,23 +34,21 @@ class ArcAgent:
         t_start = time.perf_counter()
 
         observations = initialize_observations(examples, test_input)
-        tested_theories: set[tuple] = set()
+        tested_theories: set[str] = set()
 
         for observation_check in OBSERVATION_CHECKS:
             observation_check(observations)
             for theory in get_theories(observations):
-                key = _theory_key(theory)
-
-                if key not in tested_theories:
-                    tested_theories.add(key)
+                if theory.name not in tested_theories:
+                    tested_theories.add(theory.name)
 
                     if self._validate_theory(theory, examples, observations):
                         time_spent = (time.perf_counter() - t_start) * 1000
                         print(
-                            f"{arc_problem.problem_name()}: matched ({time_spent:.1f}ms)"
+                            f"{arc_problem.problem_name()}: matched '{theory.name}' ({time_spent:.1f}ms)"
                         )
 
-                        return [apply_theory(theory, observations, None)]
+                        return [apply_theory(theory.transforms, observations, None)]
 
         time_spent = (time.perf_counter() - t_start) * 1000
         print(f"{arc_problem.problem_name()}: no match ({time_spent:.1f}ms)")

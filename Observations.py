@@ -79,6 +79,7 @@ class Observations:
     removed_input_color: int | None = None
     has_enclosing_shapes_everywhere: bool | None = None
     output_height_half_of_width_everywhere: bool | None = None
+    is_recolor_context: bool | None = None
 
 
 ObservationCheck = Callable[["Observations"], None]
@@ -431,6 +432,13 @@ def check_output_height_half_of_width(obs: Observations) -> None:
     )
 
 
+def check_recolor_context(obs: Observations) -> None:
+    obs.is_recolor_context = (
+        bool(obs.grid_size_stays_identical and obs.shapes_collected)
+        and not obs.cell_count_by_color_identical_everywhere
+    )
+
+
 OBSERVATION_CHECKS: list[ObservationCheck] = [
     check_grid_sizes,
     collect_shapes,
@@ -446,4 +454,5 @@ OBSERVATION_CHECKS: list[ObservationCheck] = [
     check_spaceship,
     check_two_by_two_rays,
     check_enclosing_shapes,
+    check_recolor_context,
 ]
