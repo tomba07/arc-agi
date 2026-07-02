@@ -453,3 +453,57 @@ def remove_non_enclosed_single_cells(
             result[cell] = 0
 
     return result
+
+
+def connect_similar_shapes(
+    grid: Grid, observations: Observations, example: ExampleObservations
+) -> Grid:
+    shapes = [
+        s
+        for s in (example.input_diagonal_shapes or [])
+        if s.color != 0 and (s.width > 1 or s.height > 1)
+    ]
+    new_colors = observations.consistent_new_output_colors
+    if (
+        not shapes
+        or new_colors is None
+        or len(new_colors) != 1
+        or not observations.only_similar_input_shapes
+    ):
+        return grid
+
+    new_color = next(iter(new_colors))
+
+    result = grid.copy()
+    shape_cells = set()
+    for s in shapes:
+        for r in range(s.row, s.row + s.height):
+            for c in range(s.col, s.col + s.width):
+                shape_cells.add((r, c))
+
+    for shape in shapes:
+        center_row = shape.row + shape.height // 2
+        center_col = shape.col + shape.width // 2
+        for other_shape in shapes:
+            if shape == other_shape:
+                continue
+
+            other_center_row = other_shape.row + other_shape.height // 2
+            other_center_col = other_shape.col + other_shape.width // 2
+
+            if center_row == other_center_row:
+                left = min(shape.col + shape.width, other_shape.col + other_shape.width)
+                right = max(shape.col, other_shape.col)
+                for c in range(left, right):
+                    if (center_row, c) not in shape_cells:
+                        result[center_row, c] = new_color
+            elif center_col == other_center_col:
+                top = min(
+                    shape.row + shape.height, other_shape.row + other_shape.height
+                )
+                bottom = max(shape.row, other_shape.row)
+                for r in range(top, bottom):
+                    if (r, center_col) not in shape_cells:
+                        result[r, center_col] = new_color
+
+    return result

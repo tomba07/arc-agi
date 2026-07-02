@@ -10,6 +10,7 @@ from Shapes import (
     Spaceship_Shape,
     get_shapes,
     get_color_strict_shapes,
+    get_diagonal_shapes,
     get_square_abstraction,
     check_spaceship_shape,
     collect_opposing_same_color_single_cells,
@@ -53,6 +54,7 @@ class ExampleObservations:
     enclosing_shapes: list[Shape] = field(default_factory=list)
     input_color_strict_shapes: list[Shape] | None = None
     output_color_strict_shapes: list[Shape] | None = None
+    input_diagonal_shapes: list[Shape] | None = None
     output_height_half_of_width: bool = False
 
 
@@ -88,6 +90,7 @@ class Observations:
     has_enclosing_shapes_everywhere: bool | None = None
     output_height_half_of_width_everywhere: bool | None = None
     is_recolor_context: bool | None = None
+    only_similar_input_shapes: bool | None = None
 
 
 ObservationCheck = Callable[["Observations"], None]
@@ -121,11 +124,13 @@ def collect_shapes(obs: Observations) -> None:
         ex.output_shapes = get_shapes(ex.output_grid)
         ex.input_color_strict_shapes = get_color_strict_shapes(ex.input_grid)
         ex.output_color_strict_shapes = get_color_strict_shapes(ex.output_grid)
+        ex.input_diagonal_shapes = get_diagonal_shapes(ex.input_grid)
 
     test = obs.test_observations
     test.input_shapes = get_shapes(test.input_grid)
     test.input_shape_count = len(test.input_shapes)
     test.input_color_strict_shapes = get_color_strict_shapes(test.input_grid)
+    test.input_diagonal_shapes = get_diagonal_shapes(test.input_grid)
 
     obs.single_shape_everywhere = all(
         len(ex.input_shapes) == 1 and len(ex.output_shapes) == 1
@@ -523,6 +528,25 @@ def check_implicit_color_dividers(obs: Observations) -> None:
         obs.test_observations.single_implicit_vertical_divider = True
 
 
+def check_only_similar_input_shapes(obs: Observations) -> None:
+    if not obs.shapes_collected:
+        collect_shapes(obs)
+
+    all_shapes = []
+
+    obs.only_similar_input_shapes = False
+
+    for example in obs.example_observations:
+        for shape in example.input_diagonal_shapes:
+            if shape.color != 0 and (shape.width > 1 or shape.height > 1):
+                all_shapes.append(shape)
+
+    if len(all_shapes) > 0:
+        first_shape = all_shapes[0]
+        if all(first_shape.is_similar_to(shape) for shape in all_shapes):
+            obs.only_similar_input_shapes = True
+
+
 OBSERVATION_CHECKS: list[ObservationCheck] = [
     check_grid_sizes,
     collect_shapes,
@@ -539,5 +563,6 @@ OBSERVATION_CHECKS: list[ObservationCheck] = [
     check_two_by_two_rays,
     check_enclosing_shapes,
     check_implicit_color_dividers,
+    check_only_similar_input_shapes,
     check_recolor_context,
 ]

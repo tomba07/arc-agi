@@ -3,6 +3,7 @@ from typing import Callable
 
 from Transformations import (
     Theory,
+    connect_similar_shapes,
     fill_enclosing_shapes_with_dominant_color,
     make_implicit_divider_operation,
     remove_non_enclosed_single_cells,
@@ -33,6 +34,7 @@ from Observations import (
     ObservationCheck,
     check_grid_sizes,
     check_implicit_color_dividers,
+    check_only_similar_input_shapes,
     collect_shapes,
     check_output_size_ratio,
     check_output_height_half_of_width,
@@ -272,6 +274,12 @@ ALL_THEORIES: list[TheoryDef] = [
         lambda observations: bool(observations.has_enclosing_shapes_everywhere),
         [fill_enclosing_shapes_with_dominant_color, remove_non_enclosed_single_cells],
         [collect_shapes, check_enclosing_shapes],
+    ),
+    TheoryDef(
+        "connect_similar_shapes",
+        lambda observations: bool(observations.only_similar_input_shapes),
+        [connect_similar_shapes],
+        [collect_shapes, check_only_similar_input_shapes, check_color_sets],
     ),
 ]
 

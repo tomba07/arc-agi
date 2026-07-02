@@ -24,6 +24,13 @@ class Shape:
     is_two_by_two: bool = False
     encloses_cells: bool = False
     enclosed_cells: set[tuple[int, int]] | None = None
+    #method which returns True
+    def is_similar_to(self, other: "Shape") -> bool:
+        return (
+            self.width == other.width
+            and self.height == other.height
+            and self.color == other.color
+        )
 
 
 @dataclass
@@ -82,6 +89,34 @@ def get_shapes(grid: Grid) -> list[Shape]:
                 continue
             cells_info = _collect_cells(grid, start_row, start_col, visited)
             shapes.append(_make_shape(cells_info.cells, cells_info.color))
+    return shapes
+
+
+def get_diagonal_shapes(grid: Grid) -> list[Shape]:
+    visited: set[tuple[int, int]] = set()
+    shapes = []
+    for start_row in range(grid.shape[0]):
+        for start_col in range(grid.shape[1]):
+            if grid[start_row, start_col] == 0 or (start_row, start_col) in visited:
+                continue
+            color = grid[start_row, start_col]
+            cells: set[tuple[int, int]] = set()
+            queue = [(start_row, start_col)]
+            while queue:
+                row, col = queue.pop()
+                if (row, col) in visited or not (
+                    0 <= row < grid.shape[0] and 0 <= col < grid.shape[1]
+                ):
+                    continue
+                if grid[row, col] == 0:
+                    continue
+                visited.add((row, col))
+                cells.add((row, col))
+                queue.extend([
+                    (row-1, col), (row+1, col), (row, col-1), (row, col+1),
+                    (row-1, col-1), (row-1, col+1), (row+1, col-1), (row+1, col+1),
+                ])
+            shapes.append(_make_shape(cells, color))
     return shapes
 
 
@@ -297,3 +332,4 @@ def shape_encloses_cells(shape: Shape, grid: Grid) -> set[tuple[int, int]]:
     cells_without_shape = {(r, c) for r in range(rows) for c in range(cols)} - shape_cell_set
     
     return cells_without_shape - visited
+
