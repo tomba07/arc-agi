@@ -36,7 +36,9 @@ class ExampleObservations:
     input_square_abstraction: Shape | None = None
     input_square_abstraction_color: int | None = None
     input_only_two_by_twos: bool = False
-    two_by_two_uni_ray_direction_by_color: dict[int, DiagonalDirection | None] | None = None
+    two_by_two_uni_ray_direction_by_color: (
+        dict[int, DiagonalDirection | None] | None
+    ) = None
     input_cell_count_by_color: dict[int, int] | None = None
     output_cell_count_by_color: dict[int, int] | None = None
     cell_count_by_color_identical: bool | None = None
@@ -45,6 +47,8 @@ class ExampleObservations:
     output_twice_as_large_as_input: bool = False
     single_horizontal_divider: bool = False
     single_vertical_divider: bool = False
+    single_implicit_horizontal_divider: bool = False
+    single_implicit_vertical_divider: bool = False
     has_enclosing_shapes: bool = False
     enclosing_shapes: list[Shape] = field(default_factory=list)
     input_color_strict_shapes: list[Shape] | None = None
@@ -64,7 +68,9 @@ class Observations:
     single_output_color: int | None = None
     input_square_abstraction_everywhere: bool | None = None
     all_inputs_only_two_by_twos: bool | None = None
-    consistent_two_by_two_uni_ray_direction_by_color: dict[int, DiagonalDirection | None] | None = None
+    consistent_two_by_two_uni_ray_direction_by_color: (
+        dict[int, DiagonalDirection | None] | None
+    ) = None
     consistent_new_output_colors: set[int] | None = None
     consistent_removed_colors: set[int] | None = None
     two_new_output_colors_everywhere: bool | None = None
@@ -76,6 +82,8 @@ class Observations:
     all_outputs_twice_as_large_as_inputs: bool | None = None
     has_single_horizontal_divider_everywhere: bool | None = None
     has_single_vertical_divider_everywhere: bool | None = None
+    has_single_implicit_horizontal_divider_everywhere: bool | None = None
+    has_single_implicit_vertical_divider_everywhere: bool | None = None
     removed_input_color: int | None = None
     has_enclosing_shapes_everywhere: bool | None = None
     output_height_half_of_width_everywhere: bool | None = None
@@ -177,19 +185,27 @@ def check_color_sets(obs: Observations) -> None:
         set(np.unique(ex.input_grid)) - set(np.unique(ex.output_grid))
         for ex in examples
     ]
-    obs.consistent_removed_colors = removed_per_example[0].intersection(*removed_per_example[1:])
+    obs.consistent_removed_colors = removed_per_example[0].intersection(
+        *removed_per_example[1:]
+    )
 
 
 def check_zero_shapes(obs: Observations) -> None:
     for ex in obs.example_observations:
         zero_shapes = get_zero_shapes(ex.input_grid)
         ex.enclosed_zero_shapes = get_enclosed_shapes(zero_shapes, ex.input_grid.shape)
-        ex.non_enclosed_zero_shapes = get_non_enclosed_shapes(zero_shapes, ex.input_grid.shape)
+        ex.non_enclosed_zero_shapes = get_non_enclosed_shapes(
+            zero_shapes, ex.input_grid.shape
+        )
 
     test = obs.test_observations
     test_zero_shapes = get_zero_shapes(test.input_grid)
-    test.enclosed_zero_shapes = get_enclosed_shapes(test_zero_shapes, test.input_grid.shape)
-    test.non_enclosed_zero_shapes = get_non_enclosed_shapes(test_zero_shapes, test.input_grid.shape)
+    test.enclosed_zero_shapes = get_enclosed_shapes(
+        test_zero_shapes, test.input_grid.shape
+    )
+    test.non_enclosed_zero_shapes = get_non_enclosed_shapes(
+        test_zero_shapes, test.input_grid.shape
+    )
 
     obs.enclosed_zero_shapes_everywhere = all(
         len(ex.enclosed_zero_shapes) > 0 for ex in obs.example_observations
@@ -272,24 +288,36 @@ def check_spaceship(obs: Observations) -> None:
 
 
 def _check_ray_from_location(
-    start_row: int, start_col: int, direction: DiagonalDirection, color: int, output_grid: Grid
+    start_row: int,
+    start_col: int,
+    direction: DiagonalDirection,
+    color: int,
+    output_grid: Grid,
 ) -> bool:
     if (
-        start_row < 0 or start_row >= output_grid.shape[0]
-        or start_col < 0 or start_col >= output_grid.shape[1]
+        start_row < 0
+        or start_row >= output_grid.shape[0]
+        or start_col < 0
+        or start_col >= output_grid.shape[1]
     ):
         return False
-    while 0 <= start_row < output_grid.shape[0] and 0 <= start_col < output_grid.shape[1]:
+    while (
+        0 <= start_row < output_grid.shape[0] and 0 <= start_col < output_grid.shape[1]
+    ):
         if output_grid[start_row, start_col] != color:
             return False
         if direction == DiagonalDirection.TL:
-            start_row -= 1; start_col -= 1
+            start_row -= 1
+            start_col -= 1
         elif direction == DiagonalDirection.TR:
-            start_row -= 1; start_col += 1
+            start_row -= 1
+            start_col += 1
         elif direction == DiagonalDirection.BL:
-            start_row += 1; start_col -= 1
+            start_row += 1
+            start_col -= 1
         elif direction == DiagonalDirection.BR:
-            start_row += 1; start_col += 1
+            start_row += 1
+            start_col += 1
     return True
 
 
@@ -308,7 +336,9 @@ def get_two_by_two_uni_ray_direction_by_color(
             ]:
                 start_row = shape.row + offset_row
                 start_col = shape.col + offset_col
-                if _check_ray_from_location(start_row, start_col, direction, color, output_grid):
+                if _check_ray_from_location(
+                    start_row, start_col, direction, color, output_grid
+                ):
                     if color in direction_by_color:
                         direction_by_color[color] = None
                     else:
@@ -320,8 +350,10 @@ def check_two_by_two_rays(obs: Observations) -> None:
     for ex in obs.example_observations:
         ex.input_only_two_by_twos = all(s.is_two_by_two for s in ex.input_shapes)
         if ex.input_only_two_by_twos:
-            ex.two_by_two_uni_ray_direction_by_color = get_two_by_two_uni_ray_direction_by_color(
-                ex.input_shapes, ex.output_grid
+            ex.two_by_two_uni_ray_direction_by_color = (
+                get_two_by_two_uni_ray_direction_by_color(
+                    ex.input_shapes, ex.output_grid
+                )
             )
 
     obs.all_inputs_only_two_by_twos = all(
@@ -391,13 +423,17 @@ def check_removed_color(observations: Observations) -> None:
         colors_in_any_output |= set(np.unique(example.output_grid)) - {0}
 
     always_removed = (colors_in_every_input or set()) - colors_in_any_output
-    observations.removed_input_color = next(iter(always_removed)) if len(always_removed) == 1 else None
+    observations.removed_input_color = (
+        next(iter(always_removed)) if len(always_removed) == 1 else None
+    )
 
 
 def check_enclosing_shapes(obs: Observations) -> None:
     def _check_example(example_observations: ExampleObservations) -> None:
         grid = example_observations.input_grid
-        border = np.concatenate([grid[0, :], grid[-1, :], grid[1:-1, 0], grid[1:-1, -1]])
+        border = np.concatenate(
+            [grid[0, :], grid[-1, :], grid[1:-1, 0], grid[1:-1, -1]]
+        )
         bg_color = int(np.bincount(border).argmax())
         for shape in example_observations.input_color_strict_shapes:
             if shape.color == bg_color:
@@ -441,6 +477,52 @@ def check_recolor_context(obs: Observations) -> None:
     )
 
 
+def check_implicit_color_dividers(obs: Observations) -> None:
+    def colors_in_grid(grid: np.ndarray) -> set[int]:
+        return set(np.unique(grid)) - {0}
+
+    for example in obs.example_observations:
+        grid = example.input_grid
+        rowCount, colCount = example.input_grid.shape
+
+        # we only check the middle divisions
+        # horizontal divider check
+        if rowCount % 2 == 0:
+            mid = rowCount // 2
+            top = grid[:mid]
+            bottom = grid[mid:]
+
+            top_colors = colors_in_grid(top)
+            bottom_colors = colors_in_grid(bottom)
+
+            if top_colors.isdisjoint(bottom_colors):
+                example.single_implicit_horizontal_divider = True
+
+        # vertical divider check
+        if colCount % 2 == 0:
+            mid = colCount // 2
+            left = grid[:, :mid]
+            right = grid[:, mid:]
+
+            left_colors = colors_in_grid(left)
+            right_colors = colors_in_grid(right)
+
+            if left_colors.isdisjoint(right_colors):
+                example.single_implicit_vertical_divider = True
+
+    # set everywhere flags
+    obs.has_single_implicit_horizontal_divider_everywhere = all(
+        ex.single_implicit_horizontal_divider for ex in obs.example_observations
+    )
+    obs.has_single_implicit_vertical_divider_everywhere = all(
+        ex.single_implicit_vertical_divider for ex in obs.example_observations
+    )
+    if obs.has_single_implicit_horizontal_divider_everywhere:
+        obs.test_observations.single_implicit_horizontal_divider = True
+    if obs.has_single_implicit_vertical_divider_everywhere:
+        obs.test_observations.single_implicit_vertical_divider = True
+
+
 OBSERVATION_CHECKS: list[ObservationCheck] = [
     check_grid_sizes,
     collect_shapes,
@@ -456,5 +538,6 @@ OBSERVATION_CHECKS: list[ObservationCheck] = [
     check_spaceship,
     check_two_by_two_rays,
     check_enclosing_shapes,
+    check_implicit_color_dividers,
     check_recolor_context,
 ]

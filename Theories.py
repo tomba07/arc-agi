@@ -4,6 +4,7 @@ from typing import Callable
 from Transformations import (
     Theory,
     fill_enclosing_shapes_with_dominant_color,
+    make_implicit_divider_operation,
     remove_non_enclosed_single_cells,
     rotate_90,
     rotate_180,
@@ -31,6 +32,7 @@ from Observations import (
     Observations,
     ObservationCheck,
     check_grid_sizes,
+    check_implicit_color_dividers,
     collect_shapes,
     check_output_size_ratio,
     check_output_height_half_of_width,
@@ -163,6 +165,23 @@ ALL_THEORIES: list[TheoryDef] = [
             ),
             [make_divider_operation(op)],
             [check_dividers, check_color_sets],
+        )
+        for op in LogicalOperation
+    ],
+    *[
+        TheoryDef(
+            f"implicit_divider_{op.value}",
+            lambda observations: (
+                (
+                    bool(observations.has_single_implicit_horizontal_divider_everywhere)
+                    or bool(
+                        observations.has_single_implicit_vertical_divider_everywhere
+                    )
+                )
+                and observations.single_output_color is not None
+            ),
+            [make_implicit_divider_operation(op)],
+            [check_implicit_color_dividers, check_color_sets],
         )
         for op in LogicalOperation
     ],

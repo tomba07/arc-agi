@@ -331,6 +331,30 @@ def make_divider_operation(operation: LogicalOperation) -> Transform:
     return fn
 
 
+def make_implicit_divider_operation(operation: LogicalOperation) -> Transform:
+    def fn(
+        grid: Grid, observations: Observations, example: ExampleObservations
+    ) -> Grid:
+        if (
+            not example.single_implicit_horizontal_divider
+            and not example.single_implicit_vertical_divider
+        ):
+            return grid
+        output_color = observations.single_output_color or 3
+        if example.single_implicit_horizontal_divider:
+            mid = grid.shape[0] // 2
+            return _perform_logical_operation(
+                grid[:mid, :], grid[mid:, :], operation, output_color
+            )
+        else:
+            mid = grid.shape[1] // 2
+            return _perform_logical_operation(
+                grid[:, :mid], grid[:, mid:], operation, output_color
+            )
+
+    return fn
+
+
 def _perform_logical_operation(
     grid1: Grid, grid2: Grid, operation: LogicalOperation, output_color: int
 ) -> Grid:
