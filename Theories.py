@@ -6,6 +6,7 @@ from Transformations import (
     connect_similar_shapes,
     fill_enclosing_shapes_with_dominant_color,
     make_implicit_divider_operation,
+    print_two_by_two_color_count,
     put_shapes_into_bottom_gaps,
     remove_non_enclosed_single_cells,
     rotate_90,
@@ -288,6 +289,15 @@ ALL_THEORIES: list[TheoryDef] = [
         lambda observations: bool(observations.bottom_gaps_everywhere),
         [put_shapes_into_bottom_gaps],
         [collect_shapes, check_bottom_gaps],
+    ),
+    TheoryDef(
+        "print_two_by_two_color_count",
+        lambda observations: bool(
+            observations.single_non_by_two_shape_everywhere
+            and observations.two_by_twos_everywhere
+        ),
+        [print_two_by_two_color_count],
+        [collect_shapes],
     ),
 ]
 

@@ -93,6 +93,8 @@ class Observations:
     is_recolor_context: bool | None = None
     only_similar_input_shapes: bool | None = None
     bottom_gaps_everywhere: bool | None = None
+    two_by_twos_everywhere: bool | None = None
+    singe_non_by_two_shape_everywhere: bool | None = None
 
 
 ObservationCheck = Callable[["Observations"], None]
@@ -142,6 +144,15 @@ def collect_shapes(observations: Observations) -> None:
         ex.input_shape_count == 0 for ex in observations.example_observations
     )
     observations.shapes_collected = True
+    observations.two_by_twos_everywhere = all(
+        any(s.is_two_by_two for s in ex.input_shapes)
+        for ex in observations.example_observations
+    )
+    # all shapes except one are not 2x2 shapes, and that one shape is not a 2x2 shape
+    observations.single_non_by_two_shape_everywhere = all(
+        sum(not s.is_two_by_two for s in ex.input_shapes) == 1
+        for ex in observations.example_observations
+    )
 
 
 def check_output_size_ratio(observations: Observations) -> None:
@@ -576,7 +587,10 @@ def check_bottom_gaps(observations: Observations) -> None:
                 while col < shape.col + shape.width:
                     if example.input_grid[shape.row, col] == 0:
                         gap_start = col
-                        while col < shape.col + shape.width and example.input_grid[shape.row, col] == 0:
+                        while (
+                            col < shape.col + shape.width
+                            and example.input_grid[shape.row, col] == 0
+                        ):
                             col += 1
                         gap_end = col - 1
                         gaps.append((shape.row, gap_start, gap_end))
@@ -592,6 +606,10 @@ def check_bottom_gaps(observations: Observations) -> None:
     collect_bottom_gaps(observations.test_observations)
 
     observations.bottom_gaps_everywhere = (
-        all(ex.bottom_gaps and len(ex.bottom_gaps) > 0 for ex in observations.example_observations)
-        and observations.test_observations.bottom_gaps and len(observations.test_observations.bottom_gaps) > 0
+        all(
+            ex.bottom_gaps and len(ex.bottom_gaps) > 0
+            for ex in observations.example_observations
+        )
+        and observations.test_observations.bottom_gaps
+        and len(observations.test_observations.bottom_gaps) > 0
     )

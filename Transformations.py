@@ -559,3 +559,29 @@ def put_shapes_into_bottom_gaps(
                     break
 
     return result
+
+
+def print_two_by_two_color_count(
+    grid: Grid, observations: Observations, example: ExampleObservations
+) -> Grid:
+    non_two_by_two_shape = next(
+        shape for shape in example.input_shapes if not shape.is_two_by_two
+    )
+    non_two_by_two_color = non_two_by_two_shape.color
+
+    color_count = {}
+    for shape in example.input_shapes:
+        if shape.is_two_by_two and shape.color != non_two_by_two_color:
+            color_count[shape.color] = color_count.get(shape.color, 0) + 1
+
+    max_color_count = max(color_count.values(), default=0)
+
+    # print colored cells matching the color counts in increasing order of color count
+    sorted_colors = sorted(color_count.items(), key=lambda x: x[1])
+    # output height is number of columns, width is max color count
+    result = np.zeros((len(sorted_colors), max_color_count), dtype=int)
+
+    for i, (color, count) in enumerate(sorted_colors):
+        result[i, :count] = color
+
+    return result
