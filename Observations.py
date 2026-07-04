@@ -55,6 +55,7 @@ class ExampleObservations:
     input_color_strict_shapes: list[Shape] | None = None
     output_color_strict_shapes: list[Shape] | None = None
     input_diagonal_shapes: list[Shape] | None = None
+    bottom_gaps: list[tuple[int, int, int]] | None = None
     output_height_half_of_width: bool = False
     bottom_gaps: list[tuple[int, int, int]] | None = None
 
