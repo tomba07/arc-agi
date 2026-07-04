@@ -457,6 +457,8 @@ def check_enclosing_shapes(observations: Observations) -> None:
         for shape in example_observations.input_color_strict_shapes:
             if shape.color == bg_color:
                 continue
+            if shape.width < 3 or shape.height < 3:
+                continue
             enclosed_cells = shape_encloses_cells(shape, grid)
             if enclosed_cells:
                 shape.enclosed_cells = enclosed_cells
