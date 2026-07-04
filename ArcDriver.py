@@ -6,16 +6,17 @@ import numpy as np
 from ArcData import ArcData
 from ArcProblem import ArcProblem
 from ArcSet import ArcSet
-from ArcAgent import make_predictions
+from ArcAgent import ArcAgent
 
 def run_training_data(arc_problems: list[ArcProblem]) -> dict[ArcProblem, tuple[bool, list]]:
     """
     Run each training problem with the test output included so the agent can
     test if they are getting the correct response.
     """
+    agent = ArcAgent()
     train_ans_dict: dict[ArcProblem, tuple[bool, list]] = dict()
     for trn_problem in arc_problems:
-        preds: list[np.ndarray] = make_predictions(trn_problem)
+        preds: list[np.ndarray] = agent.make_predictions(trn_problem)
         correct = False
 
         if len(preds) <= 3:
