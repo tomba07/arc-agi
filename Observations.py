@@ -57,7 +57,6 @@ class ExampleObservations:
     input_diagonal_shapes: list[Shape] | None = None
     bottom_gaps: list[tuple[int, int, int]] | None = None
     output_height_half_of_width: bool = False
-    bottom_gaps: list[tuple[int, int, int]] | None = None
 
 
 @dataclass
@@ -95,7 +94,7 @@ class Observations:
     only_similar_input_shapes: bool | None = None
     bottom_gaps_everywhere: bool | None = None
     two_by_twos_everywhere: bool | None = None
-    singe_non_by_two_shape_everywhere: bool | None = None
+    single_non_by_two_shape_everywhere: bool | None = None
 
 
 ObservationCheck = Callable[["Observations"], None]
