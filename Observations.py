@@ -57,6 +57,7 @@ class ExampleObservations:
     input_diagonal_shapes: list[Shape] | None = None
     bottom_gaps: list[tuple[int, int, int]] | None = None
     output_height_half_of_width: bool = False
+    has_single_enclosed_shape: bool = None
 
 
 @dataclass
@@ -95,6 +96,7 @@ class Observations:
     bottom_gaps_everywhere: bool | None = None
     two_by_twos_everywhere: bool | None = None
     single_non_by_two_shape_everywhere: bool | None = None
+    has_single_enclosed_shape_everywhere: bool | None = None
 
 
 ObservationCheck = Callable[["Observations"], None]
@@ -614,4 +616,47 @@ def check_bottom_gaps(observations: Observations) -> None:
         )
         and observations.test_observations.bottom_gaps
         and len(observations.test_observations.bottom_gaps) > 0
+    )
+
+
+def check_single_enclosed_shape_in_enclosing_shape(observations: Observations) -> None:
+    if not observations.shapes_collected:
+        collect_shapes(observations)
+
+    def test_example(example_observations: ExampleObservations) -> None:
+        enclosing_shapes = example_observations.enclosing_shapes
+        shapes = example_observations.input_diagonal_shapes or []
+        non_enclosing_shape_cells = {cell for s in enclosing_shapes for cell in s.cells}
+        non_enclosing_shapes = [
+            s for s in shapes if not (s.cells & non_enclosing_shape_cells)
+        ]
+
+        for enclosing_shape in enclosing_shapes:
+            # check if there is exactly one color inside the enclosing shape
+            for shape in non_enclosing_shapes:
+                # check if shape is inside one of the enclosing shape
+                if (
+                    shape.row > enclosing_shape.row
+                    and shape.col > enclosing_shape.col
+                    and shape.row + shape.height
+                    < enclosing_shape.row + enclosing_shape.height
+                    and shape.col + shape.width
+                    < enclosing_shape.col + enclosing_shape.width
+                ):
+                    enclosing_shape.enclosed_shapes.append(shape)
+
+            enclosed_colors = {s.color for s in enclosing_shape.enclosed_shapes}
+            if len(enclosed_colors) == 1:
+                example_observations.has_single_enclosed_shape = True
+            else:
+                example_observations.has_single_enclosed_shape = False
+
+    for example in observations.example_observations:
+        test_example(example)
+
+    test_example(observations.test_observations)
+
+    observations.has_single_enclosed_shape_everywhere = (
+        all(ex.has_single_enclosed_shape for ex in observations.example_observations)
+        and observations.test_observations.has_single_enclosed_shape
     )

@@ -585,3 +585,33 @@ def print_two_by_two_color_count(
         result[i, :count] = color
 
     return result
+
+
+def mirror_single_enclosed_shape(
+    grid: Grid, observations: Observations, example: ExampleObservations
+) -> Grid:
+    result = grid.copy()
+
+    for enclosing_shape in example.enclosing_shapes:
+        if not enclosing_shape.enclosed_shapes:
+            continue
+
+        row_sum = enclosing_shape.row * 2 + enclosing_shape.height - 1
+        col_sum = enclosing_shape.col * 2 + enclosing_shape.width - 1
+
+        color = enclosing_shape.enclosed_shapes[0].color
+        cells = {cell for s in enclosing_shape.enclosed_shapes for cell in s.cells}
+        rows = [r for r, c in cells]
+        cols = [c for r, c in cells]
+
+        row_offset = abs((min(rows) + max(rows)) - row_sum)
+        col_offset = abs((min(cols) + max(cols)) - col_sum)
+
+        if row_offset >= col_offset and enclosing_shape.height >= enclosing_shape.width:
+            for r, c in cells:
+                result[row_sum - r, c] = color
+        else:
+            for r, c in cells:
+                result[r, col_sum - c] = color
+
+    return result

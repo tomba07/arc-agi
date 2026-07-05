@@ -6,6 +6,7 @@ from Transformations import (
     connect_similar_shapes,
     fill_enclosing_shapes_with_dominant_color,
     make_implicit_divider_operation,
+    mirror_single_enclosed_shape,
     print_two_by_two_color_count,
     put_shapes_into_bottom_gaps,
     remove_non_enclosed_single_cells,
@@ -52,6 +53,7 @@ from Observations import (
     check_two_by_two_rays,
     check_enclosing_shapes,
     check_recolor_context,
+    check_single_enclosed_shape_in_enclosing_shape,
 )
 from Enums import AxisDirection, LogicalOperation
 
@@ -298,6 +300,12 @@ ALL_THEORIES: list[TheoryDef] = [
         ),
         [print_two_by_two_color_count],
         [collect_shapes],
+    ),
+    TheoryDef(
+        "mirror_single_enclosed_shape",
+        lambda observations: bool(observations.has_single_enclosed_shape_everywhere),
+        [mirror_single_enclosed_shape],
+        [collect_shapes, check_enclosing_shapes, check_single_enclosed_shape_in_enclosing_shape],
     ),
 ]
 

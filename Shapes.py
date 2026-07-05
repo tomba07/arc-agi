@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import numpy as np
 
 from Enums import Direction
@@ -24,7 +24,9 @@ class Shape:
     is_two_by_two: bool = False
     encloses_cells: bool = False
     enclosed_cells: set[tuple[int, int]] | None = None
-    #method which returns True
+    enclosed_shapes: list["Shape"] = field(default_factory=list)
+
+    # method which returns True
     def is_similar_to(self, other: "Shape") -> bool:
         return (
             self.width == other.width
@@ -112,10 +114,18 @@ def get_diagonal_shapes(grid: Grid) -> list[Shape]:
                     continue
                 visited.add((row, col))
                 cells.add((row, col))
-                queue.extend([
-                    (row-1, col), (row+1, col), (row, col-1), (row, col+1),
-                    (row-1, col-1), (row-1, col+1), (row+1, col-1), (row+1, col+1),
-                ])
+                queue.extend(
+                    [
+                        (row - 1, col),
+                        (row + 1, col),
+                        (row, col - 1),
+                        (row, col + 1),
+                        (row - 1, col - 1),
+                        (row - 1, col + 1),
+                        (row + 1, col - 1),
+                        (row + 1, col + 1),
+                    ]
+                )
             shapes.append(_make_shape(cells, color))
     return shapes
 
@@ -158,7 +168,12 @@ def get_square_abstraction(shapes: list[Shape]) -> Shape | None:
         ):
             rows = sorted(s.row for s in color_shapes)
             cols = sorted(s.col for s in color_shapes)
-            if rows[0] == rows[1] and rows[2] == rows[3] and cols[0] == cols[1] and cols[2] == cols[3]:
+            if (
+                rows[0] == rows[1]
+                and rows[2] == rows[3]
+                and cols[0] == cols[1]
+                and cols[2] == cols[3]
+            ):
                 return Shape(
                     row=rows[0],
                     col=cols[0],
@@ -175,28 +190,39 @@ def check_spaceship_shape(shapes: list[Shape], grid: Grid) -> Spaceship_Shape | 
     if len(shapes) != 1:
         return None
     shape = shapes[0]
-    ratio_correct = shape.width == shape.height * 2 - 1 or shape.height == shape.width * 2 - 1
+    ratio_correct = (
+        shape.width == shape.height * 2 - 1 or shape.height == shape.width * 2 - 1
+    )
     if not ratio_correct:
         return None
     for direction in Direction:
         beam_color = _check_pyramid_shape_and_beam_color(shape, grid, direction)
         if beam_color is not None:
             tip_row = (
-                shape.row if direction == Direction.UP
-                else shape.row + shape.height - 1 if direction == Direction.DOWN
+                shape.row
+                if direction == Direction.UP
+                else shape.row + shape.height - 1
+                if direction == Direction.DOWN
                 else shape.row + shape.height // 2
             )
             tip_col = (
-                shape.col + shape.width // 2 if direction in (Direction.UP, Direction.DOWN)
-                else shape.col if direction == Direction.LEFT
+                shape.col + shape.width // 2
+                if direction in (Direction.UP, Direction.DOWN)
+                else shape.col
+                if direction == Direction.LEFT
                 else shape.col + shape.width - 1
             )
             return Spaceship_Shape(
-                row=shape.row, col=shape.col,
-                width=shape.width, height=shape.height,
-                cells=shape.cells, color=shape.color,
-                direction=direction, beam_color=beam_color,
-                tip_row=tip_row, tip_col=tip_col,
+                row=shape.row,
+                col=shape.col,
+                width=shape.width,
+                height=shape.height,
+                cells=shape.cells,
+                color=shape.color,
+                direction=direction,
+                beam_color=beam_color,
+                tip_row=tip_row,
+                tip_col=tip_col,
             )
     return None
 
@@ -207,11 +233,15 @@ def _check_pyramid_shape_and_beam_color(
     center_row = shape.row + shape.height // 2
     center_col = shape.col + shape.width // 2
     if direction in (Direction.UP, Direction.DOWN):
-        beam_row = shape.row + shape.height - 1 if direction == Direction.UP else shape.row
+        beam_row = (
+            shape.row + shape.height - 1 if direction == Direction.UP else shape.row
+        )
         beam_col = center_col
         cells = [
             (
-                shape.row + i if direction == Direction.UP else shape.row + shape.height - 1 - i,
+                shape.row + i
+                if direction == Direction.UP
+                else shape.row + shape.height - 1 - i,
                 center_col + dc,
             )
             for i in range(shape.height)
@@ -219,11 +249,15 @@ def _check_pyramid_shape_and_beam_color(
         ]
     else:
         beam_row = center_row
-        beam_col = shape.col + shape.width - 1 if direction == Direction.LEFT else shape.col
+        beam_col = (
+            shape.col + shape.width - 1 if direction == Direction.LEFT else shape.col
+        )
         cells = [
             (
                 center_row + dr,
-                shape.col + i if direction == Direction.LEFT else shape.col + shape.width - 1 - i,
+                shape.col + i
+                if direction == Direction.LEFT
+                else shape.col + shape.width - 1 - i,
             )
             for i in range(shape.width)
             for dr in range(-i, i + 1)
@@ -289,19 +323,28 @@ def get_zero_shapes(grid: Grid) -> list[Shape]:
     return zero_shapes
 
 
-def get_enclosed_shapes(shapes: list[Shape], grid_shape: tuple[int, int]) -> list[Shape]:
+def get_enclosed_shapes(
+    shapes: list[Shape], grid_shape: tuple[int, int]
+) -> list[Shape]:
     max_row, max_col = grid_shape[0] - 1, grid_shape[1] - 1
     return [
-        s for s in shapes
+        s
+        for s in shapes
         if all(0 < row < max_row and 0 < col < max_col for row, col in s.cells)
     ]
 
 
-def get_non_enclosed_shapes(shapes: list[Shape], grid_shape: tuple[int, int]) -> list[Shape]:
+def get_non_enclosed_shapes(
+    shapes: list[Shape], grid_shape: tuple[int, int]
+) -> list[Shape]:
     max_row, max_col = grid_shape[0] - 1, grid_shape[1] - 1
     return [
-        s for s in shapes
-        if any(row == 0 or col == 0 or row == max_row or col == max_col for row, col in s.cells)
+        s
+        for s in shapes
+        if any(
+            row == 0 or col == 0 or row == max_row or col == max_col
+            for row, col in s.cells
+        )
     ]
 
 
@@ -328,8 +371,9 @@ def shape_encloses_cells(shape: Shape, grid: Grid) -> set[tuple[int, int]]:
             continue
         visited.add((r, c))
         queue.extend([(r - 1, c), (r + 1, c), (r, c - 1), (r, c + 1)])
-    
-    cells_without_shape = {(r, c) for r in range(rows) for c in range(cols)} - shape_cell_set
-    
-    return cells_without_shape - visited
 
+    cells_without_shape = {
+        (r, c) for r in range(rows) for c in range(cols)
+    } - shape_cell_set
+
+    return cells_without_shape - visited
