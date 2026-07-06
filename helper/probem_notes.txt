@@ -31,7 +31,7 @@ X 74dd1130: rotate & mirror
 X 3428a4f5: v divider & xor & color change
 X b2862040: enclosing shapes color change
 X bbc9ae5d: half height of width, growing fill
-cf98881b: h dividers & right to left overlay
+X cf98881b: h dividers & right to left overlay
 dc433765: move green 1 closer to yellow (diag allowed)
 e98196ab: v divider & overlay (no overlap)
 f8a8fe49: extract from brackets
