@@ -9,6 +9,7 @@ from Transformations import (
     grow_one_by_ones,
     make_implicit_divider_operation,
     mirror_single_enclosed_shape,
+    move_one_by_ones_to_same_colored_wall,
     print_two_by_two_color_count,
     put_shapes_into_bottom_gaps,
     remove_non_enclosed_single_cells,
@@ -41,6 +42,7 @@ from Observations import (
     check_grid_sizes,
     check_implicit_color_dividers,
     check_only_similar_input_shapes,
+    check_walls,
     collect_shapes,
     check_output_size_ratio,
     check_output_height_half_of_width,
@@ -167,6 +169,12 @@ ALL_THEORIES: list[TheoryDef] = [
         ),
         [grow_one_by_ones],
         [collect_shapes, check_color_sets],
+    ),
+    TheoryDef(
+        "move_one_by_ones_to_same_colored_wall",
+        lambda observations: bool(observations.has_four_walls_everywhere),
+        [move_one_by_ones_to_same_colored_wall],
+        [collect_shapes, check_walls],
     ),
     *[
         TheoryDef(

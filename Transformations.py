@@ -646,6 +646,50 @@ def grow_one_by_ones(
             for dr in [-1, 0, 1]:
                 for dc in [-1, 0, 1]:
                     new_row, new_col = row + dr, col + dc
-                    
+
                     result[new_row, new_col] = new_color
+    return result
+
+
+def move_one_by_ones_to_same_colored_wall(
+    grid: Grid, observations: Observations, example: ExampleObservations
+) -> Grid:
+    result = np.zeros_like(grid)
+    wall_by_color = {
+        shape.color: shape for shape in example.input_shapes if shape.is_wall
+    }
+
+    for shape in example.input_shapes:
+        if shape.is_wall:
+            # copy over walls to result
+            result[
+                shape.row : shape.row + shape.height,
+                shape.col : shape.col + shape.width,
+            ] = shape.color
+        elif shape.is_one_by_one:
+            row = shape.row
+            col = shape.col
+            color = shape.color
+            matching_wall = wall_by_color.get(color)            
+
+            if matching_wall:
+                wall_row = matching_wall.row
+                wall_col = matching_wall.col
+
+                # wall is left wall
+                if wall_col == 0:
+                    result[row, wall_col + 1] = color
+
+                # wall is top wall
+                elif wall_row == 0:
+                    result[wall_row + 1, col] = color
+
+                # wall is bot wall
+                elif wall_row + matching_wall.height == result.shape[0]:
+                    result[wall_row - 1, col] = color
+
+                # wall is right wall
+                elif wall_col + matching_wall.width == result.shape[1]:
+                    result[row, wall_col - 1] = color
+
     return result

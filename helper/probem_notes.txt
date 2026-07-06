@@ -12,7 +12,7 @@ X b94a9452: crop & invert_colors
 X b1948b0a: color change
 X ce4f8723: v-divider+OR
 X ce22a75a: single cells grow
-d687bc17: colored_walls_attract
+X d687bc17: colored_walls_attract
 X ed36ccf7: rotation
 X f25ffba3: v-mirror
 X f2829549: h-divider+NOR

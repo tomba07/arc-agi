@@ -26,6 +26,7 @@ class Shape:
     encloses_cells: bool = False
     enclosed_cells: set[tuple[int, int]] | None = None
     enclosed_shapes: list["Shape"] = field(default_factory=list)
+    is_wall: bool = False
 
     # method which returns True
     def is_similar_to(self, other: "Shape") -> bool:

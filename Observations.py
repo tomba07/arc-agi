@@ -61,6 +61,7 @@ class ExampleObservations:
     has_single_enclosed_shape: bool = None
     input_has_single_one_by_one_shape: bool = None
     output_has_single_one_by_one_shape: bool = None
+    has_four_walls: bool = None
 
 
 @dataclass
@@ -103,6 +104,7 @@ class Observations:
     has_single_enclosed_shape_everywhere: bool | None = None
     input_has_single_one_by_one_shape_everywhere: bool = None
     output_has_single_one_by_one_shape_everywhere: bool = None
+    has_four_walls_everywhere: bool | None = None
 
 
 ObservationCheck = Callable[["Observations"], None]
@@ -695,3 +697,45 @@ def check_single_enclosed_shape_in_enclosing_shape(observations: Observations) -
         all(ex.has_single_enclosed_shape for ex in observations.example_observations)
         and observations.test_observations.has_single_enclosed_shape
     )
+
+
+def check_walls(observations: Observations) -> None:
+    if not observations.shapes_collected:
+        collect_shapes(observations)
+
+    def is_wall(shape: Shape, grid: Grid) -> bool:
+        length_correct = (
+            shape.width == grid.shape[1] - 2 or shape.height == grid.shape[0] - 2
+        )
+        width_correct = shape.width == 1 or shape.height == 1
+        position_correct = (
+            shape.row == 0
+            or shape.col == 0
+            or shape.row == grid.shape[0] - 1
+            or shape.col == grid.shape[1] - 1
+        )
+        return length_correct and width_correct and position_correct
+
+    for example in observations.example_observations:
+        wall_count = 0
+        for shape in example.input_shapes:
+            shape_is_wall = is_wall(shape, example.input_grid)
+            if shape_is_wall:
+                wall_count += 1
+            shape.is_wall = shape_is_wall
+        
+        example.has_four_walls = wall_count == 4
+
+    test = observations.test_observations
+    wall_count = 0
+    for shape in test.input_shapes:
+        shape_is_wall = is_wall(shape, test.input_grid)
+        if shape_is_wall:
+            wall_count += 1
+        shape.is_wall = shape_is_wall
+        
+    test.has_four_walls = wall_count == 4
+
+    observations.has_four_walls_everywhere = all(
+        ex.has_four_walls for ex in observations.example_observations
+    ) and test.has_four_walls
