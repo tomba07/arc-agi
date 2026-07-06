@@ -21,6 +21,7 @@ class Shape:
     cells: set[tuple[int, int]]
     is_square_abstraction: bool = False
     color: int | None = None
+    is_one_by_one: bool = False
     is_two_by_two: bool = False
     encloses_cells: bool = False
     enclosed_cells: set[tuple[int, int]] | None = None
@@ -79,6 +80,7 @@ def _make_shape(cells: set[tuple[int, int]], color: int) -> Shape:
         cells=cells,
         color=color,
         is_two_by_two=(height == 2 and width == 2),
+        is_one_by_one=(height == 1 and width == 1),
     )
 
 

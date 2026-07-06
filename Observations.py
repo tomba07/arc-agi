@@ -58,6 +58,8 @@ class ExampleObservations:
     bottom_gaps: list[tuple[int, int, int]] | None = None
     output_height_half_of_width: bool = False
     has_single_enclosed_shape: bool = None
+    input_has_single_one_by_one_shape: bool = None
+    output_has_single_one_by_one_shape: bool = None
 
 
 @dataclass
@@ -97,6 +99,8 @@ class Observations:
     two_by_twos_everywhere: bool | None = None
     single_non_by_two_shape_everywhere: bool | None = None
     has_single_enclosed_shape_everywhere: bool | None = None
+    input_has_single_one_by_one_shape_everywhere: bool = None
+    output_has_single_one_by_one_shape_everywhere: bool = None
 
 
 ObservationCheck = Callable[["Observations"], None]
@@ -131,12 +135,21 @@ def collect_shapes(observations: Observations) -> None:
         ex.input_color_strict_shapes = get_color_strict_shapes(ex.input_grid)
         ex.output_color_strict_shapes = get_color_strict_shapes(ex.output_grid)
         ex.input_diagonal_shapes = get_diagonal_shapes(ex.input_grid)
+        ex.input_has_single_one_by_one_shape = (
+            len(ex.input_shapes) == 1 and ex.input_shapes[0].is_one_by_one
+        )
+        ex.output_has_single_one_by_one_shape = (
+            len(ex.output_shapes) == 1 and ex.output_shapes[0].is_one_by_one
+        )
 
     test = observations.test_observations
     test.input_shapes = get_shapes(test.input_grid)
     test.input_shape_count = len(test.input_shapes)
     test.input_color_strict_shapes = get_color_strict_shapes(test.input_grid)
     test.input_diagonal_shapes = get_diagonal_shapes(test.input_grid)
+    test.input_has_single_one_by_one_shape = (
+        len(test.input_shapes) == 1 and test.input_shapes[0].is_one_by_one
+    )
 
     observations.single_shape_everywhere = all(
         len(ex.input_shapes) == 1 and len(ex.output_shapes) == 1
@@ -153,6 +166,17 @@ def collect_shapes(observations: Observations) -> None:
     # all shapes except one are not 2x2 shapes, and that one shape is not a 2x2 shape
     observations.single_non_by_two_shape_everywhere = all(
         sum(not s.is_two_by_two for s in ex.input_shapes) == 1
+        for ex in observations.example_observations
+    )
+    observations.input_has_single_one_by_one_shape_everywhere = (
+        all(
+            ex.input_has_single_one_by_one_shape
+            for ex in observations.example_observations
+        )
+        and observations.test_observations.input_has_single_one_by_one_shape
+    )
+    observations.output_has_single_one_by_one_shape_everywhere = all(
+        ex.output_has_single_one_by_one_shape
         for ex in observations.example_observations
     )
 

@@ -3,6 +3,7 @@ from typing import Callable
 
 from Transformations import (
     Theory,
+    cast_rays_from_single_cells,
     connect_similar_shapes,
     fill_enclosing_shapes_with_dominant_color,
     make_implicit_divider_operation,
@@ -145,6 +146,12 @@ ALL_THEORIES: list[TheoryDef] = [
         lambda observations: bool(observations.input_square_abstraction_everywhere),
         [crop_to_square_abstraction, recolor_to_square_abstraction],
         [collect_shapes, check_square_abstraction],
+    ),
+    TheoryDef(
+        "cast_rays_from_single_cells",
+        lambda observations: bool(observations.input_has_single_one_by_one_shape_everywhere and not observations.output_has_single_one_by_one_shape_everywhere),
+        [cast_rays_from_single_cells],
+        [collect_shapes],
     ),
     *[
         TheoryDef(

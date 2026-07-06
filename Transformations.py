@@ -615,3 +615,20 @@ def mirror_single_enclosed_shape(
                 result[r, col_sum - c] = color
 
     return result
+
+
+def cast_rays_from_single_cells(
+    grid: Grid, observations: Observations, example: ExampleObservations
+) -> Grid:
+    result = grid.copy()
+    for shape in example.input_shapes:
+        if shape.width == 1 and shape.height == 1:
+            color = shape.color
+            row, col = shape.row, shape.col
+            for row_diff, col_diff in [(-1, -1), (-1, 1), (1, -1), (1, 1)]:
+                new_row, new_col = row + row_diff, col + col_diff
+                while 0 <= new_row < result.shape[0] and 0 <= new_col < result.shape[1]:
+                    result[new_row, new_col] = color
+                    new_row += row_diff
+                    new_col += col_diff
+    return result
