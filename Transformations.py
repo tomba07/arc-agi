@@ -632,3 +632,20 @@ def cast_rays_from_single_cells(
                     new_row += row_diff
                     new_col += col_diff
     return result
+
+
+def grow_one_by_ones(
+    grid: Grid, observations: Observations, example: ExampleObservations
+) -> Grid:
+    result = grid.copy()
+    new_color = next(iter(observations.consistent_new_output_colors), None)
+
+    for shape in example.input_shapes:
+        if shape.is_one_by_one:
+            row, col = shape.row, shape.col
+            for dr in [-1, 0, 1]:
+                for dc in [-1, 0, 1]:
+                    new_row, new_col = row + dr, col + dc
+                    
+                    result[new_row, new_col] = new_color
+    return result

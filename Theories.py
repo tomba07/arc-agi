@@ -6,6 +6,7 @@ from Transformations import (
     cast_rays_from_single_cells,
     connect_similar_shapes,
     fill_enclosing_shapes_with_dominant_color,
+    grow_one_by_ones,
     make_implicit_divider_operation,
     mirror_single_enclosed_shape,
     print_two_by_two_color_count,
@@ -149,9 +150,23 @@ ALL_THEORIES: list[TheoryDef] = [
     ),
     TheoryDef(
         "cast_rays_from_single_cells",
-        lambda observations: bool(observations.input_has_single_one_by_one_shape_everywhere and not observations.output_has_single_one_by_one_shape_everywhere),
+        lambda observations: bool(
+            observations.input_has_single_one_by_one_shape_everywhere
+            and not observations.output_has_single_one_by_one_shape_everywhere
+        ),
         [cast_rays_from_single_cells],
         [collect_shapes],
+    ),
+    TheoryDef(
+        "grow_one_by_ones",
+        lambda observations: bool(
+            observations.all_inputs_only_one_by_ones
+            and not observations.output_has_single_one_by_one_shape_everywhere
+            and observations.consistent_new_output_colors is not None
+            and len(observations.consistent_new_output_colors) == 1
+        ),
+        [grow_one_by_ones],
+        [collect_shapes, check_color_sets],
     ),
     *[
         TheoryDef(
@@ -312,7 +327,11 @@ ALL_THEORIES: list[TheoryDef] = [
         "mirror_single_enclosed_shape",
         lambda observations: bool(observations.has_single_enclosed_shape_everywhere),
         [mirror_single_enclosed_shape],
-        [collect_shapes, check_enclosing_shapes, check_single_enclosed_shape_in_enclosing_shape],
+        [
+            collect_shapes,
+            check_enclosing_shapes,
+            check_single_enclosed_shape_in_enclosing_shape,
+        ],
     ),
 ]
 

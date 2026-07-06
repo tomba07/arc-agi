@@ -37,6 +37,7 @@ class ExampleObservations:
     input_square_abstraction: Shape | None = None
     input_square_abstraction_color: int | None = None
     input_only_two_by_twos: bool = False
+    input_only_one_by_ones: bool = False
     two_by_two_uni_ray_direction_by_color: (
         dict[int, DiagonalDirection | None] | None
     ) = None
@@ -74,6 +75,7 @@ class Observations:
     single_output_color: int | None = None
     input_square_abstraction_everywhere: bool | None = None
     all_inputs_only_two_by_twos: bool | None = None
+    all_inputs_only_one_by_ones: bool | None = None
     consistent_two_by_two_uni_ray_direction_by_color: (
         dict[int, DiagonalDirection | None] | None
     ) = None
@@ -141,6 +143,9 @@ def collect_shapes(observations: Observations) -> None:
         ex.output_has_single_one_by_one_shape = (
             len(ex.output_shapes) == 1 and ex.output_shapes[0].is_one_by_one
         )
+        ex.all_input_shapes_are_one_by_one = all(
+            shape.is_one_by_one for shape in ex.input_shapes
+        )
 
     test = observations.test_observations
     test.input_shapes = get_shapes(test.input_grid)
@@ -149,6 +154,9 @@ def collect_shapes(observations: Observations) -> None:
     test.input_diagonal_shapes = get_diagonal_shapes(test.input_grid)
     test.input_has_single_one_by_one_shape = (
         len(test.input_shapes) == 1 and test.input_shapes[0].is_one_by_one
+    )
+    test.all_input_shapes_are_one_by_one = all(
+        shape.is_one_by_one for shape in test.input_shapes
     )
 
     observations.single_shape_everywhere = all(
@@ -178,6 +186,9 @@ def collect_shapes(observations: Observations) -> None:
     observations.output_has_single_one_by_one_shape_everywhere = all(
         ex.output_has_single_one_by_one_shape
         for ex in observations.example_observations
+    )
+    observations.all_inputs_only_one_by_ones = all(
+        ex.all_input_shapes_are_one_by_one for ex in observations.example_observations
     )
 
 

@@ -4,14 +4,14 @@ MS B
 X 1cf80156: crop
 X 28e73c20: spiral
 X 0520fde7: h-divider+AND
-623ea044: single cell casts rays
+X 623ea044: single cell casts rays
 X 4347f46a: make hollow
 X 6150a2bd: rotate
 X 6430c8c4: v-divider+NOR
 X b94a9452: crop & invert_colors
 X b1948b0a: color change
 X ce4f8723: v-divider+OR
-ce22a75a: single cells grow
+X ce22a75a: single cells grow
 d687bc17: colored_walls_attract
 X ed36ccf7: rotation
 X f25ffba3: v-mirror
