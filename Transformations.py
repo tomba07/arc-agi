@@ -1,4 +1,5 @@
 from typing import Callable
+from unittest import result
 
 import numpy as np
 
@@ -670,7 +671,7 @@ def move_one_by_ones_to_same_colored_wall(
             row = shape.row
             col = shape.col
             color = shape.color
-            matching_wall = wall_by_color.get(color)            
+            matching_wall = wall_by_color.get(color)
 
             if matching_wall:
                 wall_row = matching_wall.row
@@ -693,3 +694,60 @@ def move_one_by_ones_to_same_colored_wall(
                     result[row, wall_col - 1] = color
 
     return result
+
+
+def make_two_divider_overlay_operation(direction: Direction) -> Transform:
+    def fn(
+        grid: Grid, observations: Observations, example: ExampleObservations
+    ) -> Grid:
+        def perform_overlay(subgrid1: Grid, subgrid2: Grid) -> Grid:
+            return np.where(subgrid2 != 0, subgrid2, subgrid1)
+
+        # overlay means that the last last grid wins. 0s are ignored
+        if direction == Direction.DOWN:
+            mid1 = grid.shape[0] // 3
+            mid2 = 2 * grid.shape[0] // 3
+
+            first_subgrid = grid[:mid1, :]
+            second_subgrid = grid[mid1 + 1 : mid2, :]
+            third_subgrid = grid[mid2 + 1 :, :]
+
+            result = perform_overlay(first_subgrid, second_subgrid)
+            result = perform_overlay(result, third_subgrid)
+
+        elif direction == Direction.UP:
+            mid1 = grid.shape[0] // 3
+            mid2 = 2 * grid.shape[0] // 3
+
+            first_subgrid = grid[mid2 + 1 :, :]
+            second_subgrid = grid[mid1 + 1 : mid2, :]
+            third_subgrid = grid[:mid1, :]
+
+            result = perform_overlay(first_subgrid, second_subgrid)
+            result = perform_overlay(result, third_subgrid)
+
+        elif direction == Direction.RIGHT:
+            mid1 = grid.shape[1] // 3
+            mid2 = 2 * grid.shape[1] // 3
+
+            first_subgrid = grid[:, :mid1]
+            second_subgrid = grid[:, mid1 + 1 : mid2]
+            third_subgrid = grid[:, mid2 + 1 :]
+
+            result = perform_overlay(first_subgrid, second_subgrid)
+            result = perform_overlay(result, third_subgrid)
+
+        elif direction == Direction.LEFT:
+            mid1 = grid.shape[1] // 3
+            mid2 = 2 * grid.shape[1] // 3
+
+            first_subgrid = grid[:, mid2 + 1 :]
+            second_subgrid = grid[:, mid1 + 1 : mid2]
+            third_subgrid = grid[:, :mid1]
+
+            result = perform_overlay(first_subgrid, second_subgrid)
+            result = perform_overlay(result, third_subgrid)
+
+        return result
+
+    return fn

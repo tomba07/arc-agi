@@ -8,6 +8,7 @@ from Transformations import (
     fill_enclosing_shapes_with_dominant_color,
     grow_one_by_ones,
     make_implicit_divider_operation,
+    make_two_divider_overlay_operation,
     mirror_single_enclosed_shape,
     move_one_by_ones_to_same_colored_wall,
     print_two_by_two_color_count,
@@ -42,6 +43,7 @@ from Observations import (
     check_grid_sizes,
     check_implicit_color_dividers,
     check_only_similar_input_shapes,
+    check_two_dividers,
     check_walls,
     collect_shapes,
     check_output_size_ratio,
@@ -59,7 +61,7 @@ from Observations import (
     check_recolor_context,
     check_single_enclosed_shape_in_enclosing_shape,
 )
-from Enums import AxisDirection, LogicalOperation
+from Enums import AxisDirection, Direction, LogicalOperation
 
 ARC_COLORS = range(10)
 
@@ -341,6 +343,24 @@ ALL_THEORIES: list[TheoryDef] = [
             check_single_enclosed_shape_in_enclosing_shape,
         ],
     ),
+    *[
+        TheoryDef(
+            f"two_horizontal_dividers_overlay_{direction.value}",
+            lambda observations: bool(observations.has_two_horizontal_dividers_everywhere),
+            [make_two_divider_overlay_operation(direction)],
+            [collect_shapes, check_two_dividers],
+        )
+        for direction in [Direction.UP, Direction.DOWN]
+    ],
+    *[
+        TheoryDef(
+            f"two_vertical_dividers_overlay_{direction.value}",
+            lambda observations: bool(observations.has_two_vertical_dividers_everywhere),
+            [make_two_divider_overlay_operation(direction)],
+            [collect_shapes, check_two_dividers],
+        )
+        for direction in [Direction.LEFT, Direction.RIGHT]
+    ],
 ]
 
 

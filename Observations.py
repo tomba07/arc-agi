@@ -48,7 +48,9 @@ class ExampleObservations:
     spaceship_shape: Spaceship_Shape | None = None
     output_twice_as_large_as_input: bool = False
     single_horizontal_divider: bool = False
+    two_horizontal_dividers: bool = False
     single_vertical_divider: bool = False
+    two_vertical_dividers: bool = False
     single_implicit_horizontal_divider: bool = False
     single_implicit_vertical_divider: bool = False
     has_enclosing_shapes: bool = False
@@ -90,7 +92,9 @@ class Observations:
     has_spaceship_shape_everywhere: bool | None = None
     all_outputs_twice_as_large_as_inputs: bool | None = None
     has_single_horizontal_divider_everywhere: bool | None = None
+    has_two_horizontal_dividers_everywhere: bool | None = None
     has_single_vertical_divider_everywhere: bool | None = None
+    has_two_vertical_dividers_everywhere: bool | None = None
     has_single_implicit_horizontal_divider_everywhere: bool | None = None
     has_single_implicit_vertical_divider_everywhere: bool | None = None
     removed_input_color: int | None = None
@@ -467,6 +471,39 @@ def check_dividers(observations: Observations) -> None:
         )
 
 
+def check_two_dividers(observations: Observations) -> None:
+    for ex in observations.example_observations:
+        input_rows, input_cols = ex.input_grid.shape
+        output_rows, output_cols = ex.output_grid.shape
+
+        # check horizontal dividers
+        if input_rows == 3 * output_rows + 2 and input_cols == output_cols:
+            first_row = input_rows // 3
+            second_row = 2 * input_rows // 3
+            ex.two_horizontal_dividers = all(
+                ex.input_grid[first_row, col] != 0
+                and ex.input_grid[second_row, col] != 0
+                for col in range(input_cols)
+            )
+
+        # check vertical dividers
+        if input_cols == 3 * output_cols + 2 and input_rows == output_rows:
+            first_col = input_cols // 3
+            second_col = 2 * input_cols // 3
+            ex.two_vertical_dividers = all(
+                ex.input_grid[row, first_col] != 0
+                and ex.input_grid[row, second_col] != 0
+                for row in range(input_rows)
+            )
+
+    observations.has_two_horizontal_dividers_everywhere = all(
+        ex.two_horizontal_dividers for ex in observations.example_observations
+    )
+    observations.has_two_vertical_dividers_everywhere = all(
+        ex.two_vertical_dividers for ex in observations.example_observations
+    )
+
+
 def check_removed_color(observations: Observations) -> None:
     colors_in_every_input: set[int] | None = None
     for example in observations.example_observations:
@@ -723,7 +760,7 @@ def check_walls(observations: Observations) -> None:
             if shape_is_wall:
                 wall_count += 1
             shape.is_wall = shape_is_wall
-        
+
         example.has_four_walls = wall_count == 4
 
     test = observations.test_observations
@@ -733,9 +770,10 @@ def check_walls(observations: Observations) -> None:
         if shape_is_wall:
             wall_count += 1
         shape.is_wall = shape_is_wall
-        
+
     test.has_four_walls = wall_count == 4
 
-    observations.has_four_walls_everywhere = all(
-        ex.has_four_walls for ex in observations.example_observations
-    ) and test.has_four_walls
+    observations.has_four_walls_everywhere = (
+        all(ex.has_four_walls for ex in observations.example_observations)
+        and test.has_four_walls
+    )
