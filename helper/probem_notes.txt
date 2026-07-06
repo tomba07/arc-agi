@@ -1,98 +1,36 @@
 -----------
 MS B
 -----------
-1cf80156: crop
-  - obs: single shape, grid size change
-  - theory: crop(single_shape)
-
-28e73c20: spiral
-  - obs: input_empty, single_output_color
-  - theory: spiral(output_color)
-
-0520fde7: h-divider+AND
- - obs: h-divider,
- - theory: logical operations
-
+X 1cf80156: crop
+X 28e73c20: spiral
+X 0520fde7: h-divider+AND
 623ea044: single cell casts rays
- - obs: single colored cell
- - theory: cast rays from cell
-
-4347f46a: make hollow
- - obs: object_count_remains, object_sizes_stay_same
- - theory: make_hollow
-
-6150a2bd: rotate
- - obs: grid_rotated
- - theory: rotate_grid
-
-6430c8c4: v-divider+NOR
- - obs: v-divider,
- - theory: logical operations
-
-b94a9452: crop & invert_colors
- - obs: grid_size_decreases, object_count > 1
- - theory: crop & invert colors
-
-b1948b0a: color change
- - obs: color_x_becomes_y
- - theory: change_color
-
-ce4f8723: v-divider+OR
- - obs: v-divider,
- - theory: logical operations
-
+X 4347f46a: make hollow
+X 6150a2bd: rotate
+X 6430c8c4: v-divider+NOR
+X b94a9452: crop & invert_colors
+X b1948b0a: color change
+X ce4f8723: v-divider+OR
+ce22a75a: single cells grow
 d687bc17: colored_walls_attract
- - obs: walls_colored
- - theory: move-cells-to-wall-direction
-
-ed36ccf7: rotation
- - obs: grid_rotated
- - theory: rotate_grid
-
-f25ffba3: v-mirror
- - obs: grid_mirrored
- - theory: mirror_grid
-
-f2829549: h-divider+NOR
- - obs: h-divider,
- - theory: logical operations
+X ed36ccf7: rotation
+X f25ffba3: v-mirror
+X f2829549: h-divider+NOR
 
 -----------
 MS C
 -----------
-3de23699: 4 dot crop & color change
- - obs: 4 dot square, single output color, matches colors
- - theory: crop, color change
-5c0a986e: 4 dot uni-ray cast
- - obs: Input only 2-by-2s
- - theory: cast_rays_from_two_by_twos
-7b6016b9: bg & enclosed fill
- - obs: single color to 3 colors, enclosed_zero_cells
- - theory: change_cell_colors(non_enclosed_zero_cells), change_cell_colors(enclosed_zero_cells)
-9af7a82c: sort & arrange colors
- - obs: color count stays same, grid size changes
- - theory: rearrange_colored_cells(direction, increasing)
-22eb0ac0: connect opposing colors
- - obs: opposing single cells in all examples
- - theory: connect opposing cells
-25d487eb: spaceship ray
- - obs: single spaceship everywhere
- - theory: cast ray from spaceship tip
-62c24649: mirror 2x
- - obs: output_twice_as_large
- - theory: fill_with_mirror
-74dd1130: rotate & mirror
- - obs: same size
- - theory: transpose
-3428a4f5: v divider & xor & color change
- - obs: vertical divider
- - theory: logical operation on divided parts
-b2862040: enclosing shapes color change
- - obs: same shape count, 1 new color
- - theory: change enclosing shapes color
-bbc9ae5d: half height of width, growing fill
- - output half height of width
- - fill with 
+X 3de23699: 4 dot crop & color change
+X 5c0a986e: 4 dot uni-ray cast
+X 7b6016b9: bg & enclosed fill
+X 9af7a82c: sort & arrange colors
+X 22eb0ac0: connect opposing colors
+X 25d487eb: spaceship ray
+X 62c24649: mirror 2x
+X 74dd1130: rotate & mirror
+X 3428a4f5: v divider & xor & color change
+X b2862040: enclosing shapes color change
+X bbc9ae5d: half height of width, growing fill
 cf98881b: h dividers & right to left overlay
 dc433765: move green 1 closer to yellow (diag allowed)
 e98196ab: v divider & overlay (no overlap)
@@ -102,14 +40,14 @@ f35d900a: expand dots with other color and build connector lines
 -----------
 MS D
 -----------
-4b6b68e5: Fill enclosing shapes with dominant color.
-31d5ba1a: Logical XOR and color change.
-60a26a3e: Connect horizontally and vertically aligned shapes.
-67c52801: Shape with gaps at bottom. Floating shapes are rotated and slotted into gaps.
-81c0276b: 2x2 squares of certain colors counted. Number of squares represented as colored bars in output.
-195ba7dc: Horizontal divider and logical OR.
+X 4b6b68e5: Fill enclosing shapes with dominant color.
+X 31d5ba1a: Logical XOR and color change.
+X 60a26a3e: Connect horizontally and vertically aligned shapes.
+X 67c52801: Shape with gaps at bottom. Floating shapes are rotated and slotted into gaps.
+X 81c0276b: 2x2 squares of certain colors counted. Number of squares represented as colored bars in output.
+X 195ba7dc: Horizontal divider and logical OR.
 2546ccf6: Certain shapes have three out of four rotations. Fourth one gets added at according location.
-18419cfa: Enclosed shapes are mirrored either horizontally or vertically.
+X 18419cfa: Enclosed shapes are mirrored either horizontally or vertically.
 992798f6: Two cells are connected with line.
 bbb1b8b6: Content of divided subgrids is overlayed. If there are overlapping cells, the content of the second subgrid is discarded.
 bcb3040b: Two cells of identical color are connected with line. Line has different color on occupied cells.
@@ -118,157 +56,3 @@ c1990cce: Central red cell will form a roof shape in output. Blue diagonals are 
 c48954c1: Input will be mirrored to create symmetric output grid.
 d931c21c: Outline of enclosing shapes grow inwards and outwards with different colors.
 e9b4f6fc: two-by-two cells provide color change information. Large square shape represents area which is cropped.
-
-----------------
-FURTHER NOTES
-----------------
-1cf80156: crop
-    - observations:
-        - object persists
-        - grid size changes
-        - object moves
-    - theory
-        - always one object
-        - output size always the same as object size
-    - transformations
-        - crop
-            - grid size changed to object size
-            - object moved to 0,0
-28e73c20: spiral
- - TBD
-0520fde7: and
-    - observations
-        - object(s) deleted (left)
-        - object(s) deleted (right)
-        - object(s) deleted (middle)
-        - object(s) created
-        - line is in center
-        - object is left of line
-        - object is right of line
-        - objects have same color
-        - output grid same size as left side of line
-        - (strong correlation between output and sides of line)
-        - output grid same size as right side of line
-        - (strong correlation between output and sides of line)
-        - cell is filled at same relative position for left side of line, right side of line and output
-        - (in the head, we divide the input into two inputs)
-        - divider concept
-    - theory
-        - input always the same size
-        - output always the same size
-    - transformation
-        - grid size change
-        - objects deletion
-        - object(s) creation
-623ea044: draw diagonal
-    - observations
-        - grid size remains
-        - object persists
-        - objects created
-            - 2 diagonal lines
-            - go through persisting object 
-    - theory
-        - always one input object
-        - always two output lines
-    - transformation
-        - grid size change
-        - object(s) creation
-4347f46a: make hollow
-    - observations 
-        - grid size similar
-        - objects change
-            - filled -> hollow
-    - theory
-        - all objects hollow
-    - transformations
-        - make objects hollow
-6150a2bd: rotate 180
-    - observations
-        - grid sizes similar
-        - objects move & rotate
-        - grid rotates
-    - transformations
-        rotate grid
-6430c8c4: divider & nor
-    - similar to above
-b94a9452: crop and invert
-    - observations
-        - grid size changes
-        - output grid similar to object
-        - single object (containing other)
-        - object persists
-    - theory
-        - always single object
-        - always containing other
-        - color always changing
-    - transformations 
-        - crop
-            - resize grid
-            - move objects
-        - recolor objects
-        
-b1948b0a: color change
-    - observations
-        - objects persisting with color change
-    - theory
-        - pink always turns red
-    - transformations
-        - color change
-ce4f8723: divider & or
-    - similar to above
-ce22a75a: grow and color change
-    - observations
-        - grid size remains
-        - all input objects are 1x1 gray cells
-        - objects persist (central position)
-        - objects grow to 3x3 blue squares
-    - transformations
-        - grow
-        - recolor
-d687bc17: colored walls attract cells
-    - observations
-        - lines remain
-        - 1x1 cells remain but move
-        - cells move in direction perpendicular to line direction of same color
-    - transformations
-        - move single cells
-ed36ccf7: -90 deg rotation
-    - observations
-        - object persists (with rotation)
-    - transformations
-        - rotate grid
-f25ffba3: mirror horizontally
-    - observations
-        - looks like grid mirrored
-    - transformations
-        - mirror grid
-f76d97a5: color changes
-    - observations
-        - input always has gray and other color
-        - output always has black and same other color
-        - shapes retains with color change
-    - transformations
-        - color changes
-f2829549: divider and nor
-    - similar to above
-
-------------------
-primitives
-observation properties:
- - object is_hollow
-
-transformations:
- - grid
-  - change size
- - object:
-  - color change
-  - move
-    - direction, 
- 
-
-indications
- - single object -> focus on object
- - line going across -> divide input
-
-others:
- - divide input
