@@ -751,3 +751,56 @@ def make_two_divider_overlay_operation(direction: Direction) -> Transform:
         return result
 
     return fn
+
+
+def single_cell_attraction(
+    grid: Grid, observations: Observations, example: ExampleObservations
+) -> Grid:
+    result = grid.copy()
+    color_moved = None
+
+    for ex in observations.example_observations:
+        input_shapes = ex.input_shapes
+        output_shapes = ex.output_shapes
+
+        if len(input_shapes) != 2:
+            return grid
+
+        for shape in input_shapes:
+            output_match = next(
+                (s for s in output_shapes if s.color == shape.color), None
+            )
+            if output_match is None:
+                continue
+            if (shape.row, shape.col) != (output_match.row, output_match.col):
+                if color_moved is not None and color_moved != shape.color:
+                    return grid
+                color_moved = shape.color
+
+    if color_moved is None:
+        return grid
+
+    input_shapes = example.input_shapes
+    if len(input_shapes) != 2:
+        return grid
+
+    moving_shape = next((s for s in input_shapes if s.color == color_moved), None)
+    stationary_shape = next((s for s in input_shapes if s.color != color_moved), None)
+    if moving_shape is None or stationary_shape is None:
+        return grid
+
+    new_row = moving_shape.row + (
+        1 if moving_shape.row < stationary_shape.row
+        else -1 if moving_shape.row > stationary_shape.row
+        else 0
+    )
+    new_col = moving_shape.col + (
+        1 if moving_shape.col < stationary_shape.col
+        else -1 if moving_shape.col > stationary_shape.col
+        else 0
+    )
+
+    result[moving_shape.row, moving_shape.col] = 0
+    result[new_row, new_col] = moving_shape.color
+
+    return result

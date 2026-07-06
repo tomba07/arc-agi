@@ -17,6 +17,7 @@ from Transformations import (
     rotate_90,
     rotate_180,
     rotate_270,
+    single_cell_attraction,
     transpose,
     mirror_across_horizontal_axis,
     mirror_horizontally_and_vertically,
@@ -346,7 +347,9 @@ ALL_THEORIES: list[TheoryDef] = [
     *[
         TheoryDef(
             f"two_horizontal_dividers_overlay_{direction.value}",
-            lambda observations: bool(observations.has_two_horizontal_dividers_everywhere),
+            lambda observations: bool(
+                observations.has_two_horizontal_dividers_everywhere
+            ),
             [make_two_divider_overlay_operation(direction)],
             [collect_shapes, check_two_dividers],
         )
@@ -355,11 +358,28 @@ ALL_THEORIES: list[TheoryDef] = [
     *[
         TheoryDef(
             f"two_vertical_dividers_overlay_{direction.value}",
-            lambda observations: bool(observations.has_two_vertical_dividers_everywhere),
+            lambda observations: bool(
+                observations.has_two_vertical_dividers_everywhere
+            ),
             [make_two_divider_overlay_operation(direction)],
             [collect_shapes, check_two_dividers],
         )
         for direction in [Direction.LEFT, Direction.RIGHT]
+    ],
+    *[
+        TheoryDef(
+            "cell_attraction",
+            lambda observations: bool(
+                all(
+                    len(ex.input_shapes) == 2
+                    for ex in observations.example_observations
+                )
+                and observations.test_observations.input_shapes is not None
+                and len(observations.test_observations.input_shapes) == 2
+            ),
+            [single_cell_attraction],
+            [collect_shapes],
+        )
     ],
 ]
 

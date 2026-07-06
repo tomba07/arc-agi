@@ -64,6 +64,7 @@ class ExampleObservations:
     input_has_single_one_by_one_shape: bool = None
     output_has_single_one_by_one_shape: bool = None
     has_four_walls: bool = None
+    attracted_color: int | None = None
 
 
 @dataclass
