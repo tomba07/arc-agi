@@ -133,6 +133,42 @@ def get_diagonal_shapes(grid: Grid) -> list[Shape]:
     return shapes
 
 
+def get_color_strict_diagonal_shapes(grid: Grid) -> list[Shape]:
+    visited: set[tuple[int, int]] = set()
+    shapes = []
+    for start_row in range(grid.shape[0]):
+        for start_col in range(grid.shape[1]):
+            if grid[start_row, start_col] == 0 or (start_row, start_col) in visited:
+                continue
+            color = int(grid[start_row, start_col])
+            cells: set[tuple[int, int]] = set()
+            queue = [(start_row, start_col)]
+            while queue:
+                r, c = queue.pop()
+                if (r, c) in visited or not (
+                    0 <= r < grid.shape[0] and 0 <= c < grid.shape[1]
+                ):
+                    continue
+                if grid[r, c] != color:
+                    continue
+                visited.add((r, c))
+                cells.add((r, c))
+                queue.extend(
+                    [
+                        (r - 1, c),
+                        (r + 1, c),
+                        (r, c - 1),
+                        (r, c + 1),
+                        (r - 1, c - 1),
+                        (r - 1, c + 1),
+                        (r + 1, c - 1),
+                        (r + 1, c + 1),
+                    ]
+                )
+            shapes.append(_make_shape(cells, color))
+    return shapes
+
+
 def get_color_strict_shapes(grid: Grid) -> list[Shape]:
     visited: set[tuple[int, int]] = set()
     shapes = []

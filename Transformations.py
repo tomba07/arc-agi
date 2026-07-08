@@ -1,5 +1,4 @@
 from typing import Callable
-from unittest import result
 
 import numpy as np
 
@@ -752,6 +751,7 @@ def make_two_divider_overlay_operation(direction: Direction) -> Transform:
 
     return fn
 
+
 def make_single_divider_overlay_operation(direction: Direction) -> Transform:
     def fn(
         grid: Grid, observations: Observations, example: ExampleObservations
@@ -792,7 +792,6 @@ def make_single_divider_overlay_operation(direction: Direction) -> Transform:
     return fn
 
 
-
 def single_cell_attraction(
     grid: Grid, observations: Observations, example: ExampleObservations
 ) -> Grid:
@@ -830,13 +829,17 @@ def single_cell_attraction(
         return grid
 
     new_row = moving_shape.row + (
-        1 if moving_shape.row < stationary_shape.row
-        else -1 if moving_shape.row > stationary_shape.row
+        1
+        if moving_shape.row < stationary_shape.row
+        else -1
+        if moving_shape.row > stationary_shape.row
         else 0
     )
     new_col = moving_shape.col + (
-        1 if moving_shape.col < stationary_shape.col
-        else -1 if moving_shape.col > stationary_shape.col
+        1
+        if moving_shape.col < stationary_shape.col
+        else -1
+        if moving_shape.col > stationary_shape.col
         else 0
     )
 
@@ -844,3 +847,78 @@ def single_cell_attraction(
     result[new_row, new_col] = moving_shape.color
 
     return result
+
+
+def move_inner_shapes_outward_horizontal(
+    grid: Grid, observations: Observations, example: ExampleObservations
+) -> Grid:
+    shapes = example.input_color_strict_diagonal_shapes or []
+    if len(shapes) != 4:
+        return grid
+
+    result = np.zeros_like(grid)
+    s = sorted(shapes, key=lambda x: x.col)
+    outer_left, inner_left, inner_right, outer_right = s[0], s[1], s[2], s[3]
+
+    def _place_direct(shape: Shape) -> None:
+        for row, col in shape.cells:
+            result[row, col] = shape.color
+
+    def _place_h_mirrored(shape: Shape, col_offset: int) -> None:
+        min_col = min(col for _, col in shape.cells)
+        max_col = max(col for _, col in shape.cells)
+        for row, col in shape.cells:
+            new_col = min_col + max_col - col + col_offset
+            if 0 <= row < result.shape[0] and 0 <= new_col < result.shape[1]:
+                result[row, new_col] = shape.color
+
+    inner_left_offset = outer_left.col - inner_left.col - inner_left.width - 1
+    inner_right_offset = outer_right.col + outer_right.width + 1 - inner_right.col
+
+    _place_direct(outer_left)
+    _place_h_mirrored(inner_left, inner_left_offset)
+    _place_h_mirrored(inner_right, inner_right_offset)
+    _place_direct(outer_right)
+    return result
+
+
+def move_inner_shapes_outward_vertical(
+    grid: Grid, observations: Observations, example: ExampleObservations
+) -> Grid:
+    shapes = example.input_color_strict_diagonal_shapes or []
+    if len(shapes) != 4:
+        return grid
+
+    result = np.zeros_like(grid)
+    s = sorted(shapes, key=lambda x: x.row)
+    outer_top, inner_top, inner_bottom, outer_bottom = s[0], s[1], s[2], s[3]
+
+    def _place_direct(shape: Shape) -> None:
+        for row, col in shape.cells:
+            if 0 <= row < result.shape[0] and 0 <= col < result.shape[1]:
+                result[row, col] = shape.color
+
+    def _place_v_mirrored(shape: Shape, row_offset: int) -> None:
+        min_row = min(row for row, _ in shape.cells)
+        max_row = max(row for row, _ in shape.cells)
+        for row, col in shape.cells:
+            new_row = min_row + max_row - row + row_offset
+            if 0 <= new_row < result.shape[0] and 0 <= col < result.shape[1]:
+                result[new_row, col] = shape.color
+
+    inner_top_offset = outer_top.row - inner_top.row - inner_top.height - 1
+    inner_bottom_offset = outer_bottom.row + outer_bottom.height + 1 - inner_bottom.row
+
+    _place_direct(outer_top)
+    _place_v_mirrored(inner_top, inner_top_offset)
+    _place_v_mirrored(inner_bottom, inner_bottom_offset)
+    _place_direct(outer_bottom)
+    return result
+
+
+def move_inner_shapes_outward(
+    grid: Grid, observations: Observations, example: ExampleObservations
+) -> Grid:
+    if example.has_four_horizontally_aligned_shapes:
+        return move_inner_shapes_outward_horizontal(grid, observations, example)
+    return move_inner_shapes_outward_vertical(grid, observations, example)

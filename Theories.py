@@ -11,6 +11,9 @@ from Transformations import (
     make_single_divider_overlay_operation,
     make_two_divider_overlay_operation,
     mirror_single_enclosed_shape,
+    move_inner_shapes_outward_horizontal,
+    move_inner_shapes_outward_vertical,
+    move_inner_shapes_outward,
     move_one_by_ones_to_same_colored_wall,
     print_two_by_two_color_count,
     put_shapes_into_bottom_gaps,
@@ -42,6 +45,7 @@ from Observations import (
     Observations,
     ObservationCheck,
     check_bottom_gaps,
+    check_four_aligned_shapes,
     check_grid_sizes,
     check_implicit_color_dividers,
     check_only_similar_input_shapes,
@@ -402,6 +406,34 @@ ALL_THEORIES: list[TheoryDef] = [
             ),
             [single_cell_attraction],
             [collect_shapes],
+        )
+    ],
+    *[
+        TheoryDef(
+            "move_inner_shapes_outward_horizontal",
+            lambda observations: bool(
+                observations.has_four_horizontally_aligned_shapes_everywhere
+            ),
+            [move_inner_shapes_outward_horizontal],
+            [collect_shapes, check_four_aligned_shapes],
+        )
+    ],
+    *[
+        TheoryDef(
+            "move_inner_shapes_outward_vertical",
+            lambda observations: bool(
+                observations.has_four_vertically_aligned_shapes_everywhere
+            ),
+            [move_inner_shapes_outward_vertical],
+            [collect_shapes, check_four_aligned_shapes],
+        )
+    ],
+    *[
+        TheoryDef(
+            "move_inner_shapes_outward",
+            lambda observations: bool(observations.has_four_aligned_shapes_everywhere),
+            [move_inner_shapes_outward],
+            [collect_shapes, check_four_aligned_shapes],
         )
     ],
 ]

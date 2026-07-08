@@ -3,7 +3,7 @@ from typing import Callable
 
 import numpy as np
 
-from Enums import DiagonalDirection
+from Enums import AxisDirection, DiagonalDirection
 from Shapes import (
     Grid,
     Shape,
@@ -11,6 +11,7 @@ from Shapes import (
     get_shapes,
     get_color_strict_shapes,
     get_diagonal_shapes,
+    get_color_strict_diagonal_shapes,
     get_square_abstraction,
     check_spaceship_shape,
     collect_opposing_same_color_single_cells,
@@ -58,6 +59,9 @@ class ExampleObservations:
     input_color_strict_shapes: list[Shape] | None = None
     output_color_strict_shapes: list[Shape] | None = None
     input_diagonal_shapes: list[Shape] | None = None
+    output_diagonal_shapes: list[Shape] | None = None
+    input_color_strict_diagonal_shapes: list[Shape] | None = None
+    output_color_strict_diagonal_shapes: list[Shape] | None = None
     bottom_gaps: list[tuple[int, int, int]] | None = None
     output_height_half_of_width: bool = False
     has_single_enclosed_shape: bool = None
@@ -65,6 +69,8 @@ class ExampleObservations:
     output_has_single_one_by_one_shape: bool = None
     has_four_walls: bool = None
     attracted_color: int | None = None
+    has_four_horizontally_aligned_shapes: bool = None
+    has_four_vertically_aligned_shapes: bool = None
 
 
 @dataclass
@@ -110,6 +116,9 @@ class Observations:
     input_has_single_one_by_one_shape_everywhere: bool = None
     output_has_single_one_by_one_shape_everywhere: bool = None
     has_four_walls_everywhere: bool | None = None
+    has_four_horizontally_aligned_shapes_everywhere: bool | None = None
+    has_four_vertically_aligned_shapes_everywhere: bool | None = None
+    has_four_aligned_shapes_everywhere: bool | None = None
 
 
 ObservationCheck = Callable[["Observations"], None]
@@ -144,6 +153,13 @@ def collect_shapes(observations: Observations) -> None:
         ex.input_color_strict_shapes = get_color_strict_shapes(ex.input_grid)
         ex.output_color_strict_shapes = get_color_strict_shapes(ex.output_grid)
         ex.input_diagonal_shapes = get_diagonal_shapes(ex.input_grid)
+        ex.output_diagonal_shapes = get_diagonal_shapes(ex.output_grid)
+        ex.input_color_strict_diagonal_shapes = get_color_strict_diagonal_shapes(
+            ex.input_grid
+        )
+        ex.output_color_strict_diagonal_shapes = get_color_strict_diagonal_shapes(
+            ex.output_grid
+        )
         ex.input_has_single_one_by_one_shape = (
             len(ex.input_shapes) == 1 and ex.input_shapes[0].is_one_by_one
         )
@@ -159,6 +175,7 @@ def collect_shapes(observations: Observations) -> None:
     test.input_shape_count = len(test.input_shapes)
     test.input_color_strict_shapes = get_color_strict_shapes(test.input_grid)
     test.input_diagonal_shapes = get_diagonal_shapes(test.input_grid)
+    test.input_color_strict_diagonal_shapes = get_color_strict_diagonal_shapes(test.input_grid)
     test.input_has_single_one_by_one_shape = (
         len(test.input_shapes) == 1 and test.input_shapes[0].is_one_by_one
     )
@@ -777,4 +794,49 @@ def check_walls(observations: Observations) -> None:
     observations.has_four_walls_everywhere = (
         all(ex.has_four_walls for ex in observations.example_observations)
         and test.has_four_walls
+    )
+
+
+def check_four_aligned_shapes(observations: Observations) -> None:
+    def _symmetric_colors(s):
+        return (
+            s[0].color == s[3].color
+            and s[1].color == s[2].color
+            and s[0].color != s[1].color
+        )
+
+    def _four_h_aligned(shapes):
+        sorted_shapes = sorted(shapes, key=lambda x: x.col)
+        centers = {x.row + x.height // 2 for x in sorted_shapes}
+
+        return len(centers) == 1 and _symmetric_colors(sorted_shapes)
+
+    def _four_v_aligned(shapes):
+        sorted_shapes = sorted(shapes, key=lambda x: x.row)
+        centers = {x.col + x.width // 2 for x in sorted_shapes}
+
+        return len(centers) == 1 and _symmetric_colors(sorted_shapes)
+
+    for example in observations.example_observations:
+        inp = example.input_color_strict_diagonal_shapes or []
+        out = example.output_color_strict_diagonal_shapes or []
+        has_four = len(inp) == 4 and len(out) == 4
+
+        horizontal_aligned = has_four and _four_h_aligned(inp) and _four_h_aligned(out)
+        example.has_four_horizontally_aligned_shapes = horizontal_aligned
+
+        vertical_aligned = has_four and _four_v_aligned(inp) and _four_v_aligned(out)
+        example.has_four_vertically_aligned_shapes = vertical_aligned
+
+    observations.has_four_horizontally_aligned_shapes_everywhere = all(
+        ex.has_four_horizontally_aligned_shapes
+        for ex in observations.example_observations
+    )
+    observations.has_four_vertically_aligned_shapes_everywhere = all(
+        ex.has_four_vertically_aligned_shapes
+        for ex in observations.example_observations
+    )
+    observations.has_four_aligned_shapes_everywhere = all(
+        ex.has_four_horizontally_aligned_shapes or ex.has_four_vertically_aligned_shapes
+        for ex in observations.example_observations
     )

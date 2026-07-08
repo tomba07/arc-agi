@@ -34,7 +34,7 @@ X bbc9ae5d: half height of width, growing fill
 X cf98881b: h dividers & right to left overlay
 X dc433765: move green 1 closer to yellow (diag allowed)
 X e98196ab: v divider & overlay (no overlap)
-f8a8fe49: extract from brackets
+X f8a8fe49: extract from brackets
 f35d900a: expand dots with other color and build connector lines
 
 -----------
