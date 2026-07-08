@@ -8,6 +8,7 @@ from Transformations import (
     fill_enclosing_shapes_with_dominant_color,
     grow_one_by_ones,
     make_implicit_divider_operation,
+    make_single_divider_overlay_operation,
     make_two_divider_overlay_operation,
     mirror_single_enclosed_shape,
     move_one_by_ones_to_same_colored_wall,
@@ -344,6 +345,28 @@ ALL_THEORIES: list[TheoryDef] = [
             check_single_enclosed_shape_in_enclosing_shape,
         ],
     ),
+    *[
+        TheoryDef(
+            f"single_horizontal_divider_overlay_{direction.value}",
+            lambda observations: bool(
+                observations.has_single_horizontal_divider_everywhere
+            ),
+            [make_single_divider_overlay_operation(direction)],
+            [check_dividers],
+        )
+        for direction in [Direction.UP, Direction.DOWN]
+    ],
+    *[
+        TheoryDef(
+            f"single_vertical_divider_overlay_{direction.value}",
+            lambda observations: bool(
+                observations.has_single_vertical_divider_everywhere
+            ),
+            [make_single_divider_overlay_operation(direction)],
+            [check_dividers],
+        )
+        for direction in [Direction.LEFT, Direction.RIGHT]
+    ],
     *[
         TheoryDef(
             f"two_horizontal_dividers_overlay_{direction.value}",

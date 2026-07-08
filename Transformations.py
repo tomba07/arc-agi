@@ -752,6 +752,46 @@ def make_two_divider_overlay_operation(direction: Direction) -> Transform:
 
     return fn
 
+def make_single_divider_overlay_operation(direction: Direction) -> Transform:
+    def fn(
+        grid: Grid, observations: Observations, example: ExampleObservations
+    ) -> Grid:
+        def perform_overlay(subgrid1: Grid, subgrid2: Grid) -> Grid:
+            return np.where(subgrid2 != 0, subgrid2, subgrid1)
+
+        if direction == Direction.DOWN:
+            mid = grid.shape[0] // 2
+            first_subgrid = grid[:mid, :]
+            second_subgrid = grid[mid + 1 :, :]
+
+            result = perform_overlay(first_subgrid, second_subgrid)
+
+        elif direction == Direction.UP:
+            mid = grid.shape[0] // 2
+            first_subgrid = grid[mid + 1 :, :]
+            second_subgrid = grid[:mid, :]
+
+            result = perform_overlay(first_subgrid, second_subgrid)
+
+        elif direction == Direction.RIGHT:
+            mid = grid.shape[1] // 2
+            first_subgrid = grid[:, :mid]
+            second_subgrid = grid[:, mid + 1 :]
+
+            result = perform_overlay(first_subgrid, second_subgrid)
+
+        elif direction == Direction.LEFT:
+            mid = grid.shape[1] // 2
+            first_subgrid = grid[:, mid + 1 :]
+            second_subgrid = grid[:, :mid]
+
+            result = perform_overlay(first_subgrid, second_subgrid)
+
+        return result
+
+    return fn
+
+
 
 def single_cell_attraction(
     grid: Grid, observations: Observations, example: ExampleObservations
