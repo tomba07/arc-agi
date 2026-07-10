@@ -922,3 +922,56 @@ def move_inner_shapes_outward(
     if example.has_four_horizontally_aligned_shapes:
         return move_inner_shapes_outward_horizontal(grid, observations, example)
     return move_inner_shapes_outward_vertical(grid, observations, example)
+
+def grow_and_connect_single_cells(grid: Grid, observations: Observations, example: ExampleObservations) -> Grid:
+    offsets = [-1, 0, 1]
+    result = grid.copy()
+    
+    input_colors = set(np.unique(grid)) - {0}
+    
+    #grow 1x1 to 3x3 with opposite color
+    for shape in example.input_shapes:
+        if shape.width == 1 and shape.height == 1:
+            new_color = (input_colors - {shape.color}).pop()
+
+            for row, col in shape.cells:
+                for row_offset in offsets:
+                    for col_offset in offsets:
+                        if row_offset == 0 and col_offset == 0:
+                            continue
+                        new_row = row + row_offset
+                        new_col = col + col_offset
+
+                        if 0 <= new_row < result.shape[0] and 0 <= new_col < result.shape[1]:
+                            result[new_row, new_col] = new_color
+
+    #build connections between horiz or vertically aligned 3x3 shapes with new output color
+    connector_color = next(iter(observations.consistent_new_output_colors))
+    
+    for i, shape in enumerate(example.input_shapes):
+        for j, other_shape in enumerate(example.input_shapes):
+            if i != j and (shape.row == other_shape.row or shape.col == other_shape.col):
+                is_horizontal = shape.row == other_shape.row
+                
+                if is_horizontal:
+                    start_col = min(shape.col, other_shape.col) + 2
+                    end_col = max(shape.col, other_shape.col) - 2
+
+                    while start_col <= end_col:
+                        result[shape.row, start_col] = connector_color
+                        if start_col != end_col:
+                            result[shape.row, end_col] = connector_color
+                        start_col += 2
+                        end_col -= 2
+                else:
+                    start_row = min(shape.row, other_shape.row) + 2
+                    end_row = max(shape.row, other_shape.row) - 2
+
+                    while start_row <= end_row:
+                        result[start_row, shape.col] = connector_color
+                        if start_row != end_row:
+                            result[end_row, shape.col] = connector_color
+                        start_row += 2
+                        end_row -= 2
+
+    return result

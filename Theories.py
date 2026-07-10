@@ -6,6 +6,7 @@ from Transformations import (
     cast_rays_from_single_cells,
     connect_similar_shapes,
     fill_enclosing_shapes_with_dominant_color,
+    grow_and_connect_single_cells,
     grow_one_by_ones,
     make_implicit_divider_operation,
     make_single_divider_overlay_operation,
@@ -434,6 +435,18 @@ ALL_THEORIES: list[TheoryDef] = [
             lambda observations: bool(observations.has_four_aligned_shapes_everywhere),
             [move_inner_shapes_outward],
             [collect_shapes, check_four_aligned_shapes],
+        )
+    ],
+    *[
+        TheoryDef(
+            "grow_and_connect",
+            lambda observations: bool(
+                observations.consistent_new_output_colors is not None
+                and len(observations.consistent_new_output_colors) == 1
+                and observations.all_inputs_only_one_by_ones,
+            ),
+            [grow_and_connect_single_cells],
+            [collect_shapes, check_color_sets],
         )
     ],
 ]

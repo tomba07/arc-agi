@@ -29,6 +29,7 @@ class ExampleObservations:
     input_shape_count: int = 0
     enclosed_zero_shapes: list[Shape] | None = None
     non_enclosed_zero_shapes: list[Shape] | None = None
+    input_colors: set[int] | None = None
     output_colors: set[int] | None = None
     output_colors_count: int = 0
     new_output_colors: set[int] | None = None
@@ -234,6 +235,7 @@ def check_color_sets(observations: Observations) -> None:
     for ex in observations.example_observations:
         input_colors = set(np.unique(ex.input_grid)) - {0}
         output_colors = set(np.unique(ex.output_grid)) - {0}
+        ex.input_colors  = input_colors
         ex.output_colors = output_colors
         ex.output_colors_count = len(output_colors)
         ex.new_output_colors = output_colors - input_colors
