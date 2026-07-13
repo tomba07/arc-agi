@@ -103,80 +103,83 @@ def make_hollow(
     return result
 
 
-def make_spiral_transformation(color: int) -> Transform:
+def _draw_black_lr(top, bottom, left, right, grid):
+    for c in range(left, right + 1):
+        grid[top][c] = 0
+
+
+def _draw_black_tb(top, bottom, left, right, grid):
+    for r in range(top, bottom + 1):
+        grid[r][left] = 0
+
+
+def _draw_black_rl(top, bottom, left, right, grid):
+    for c in range(right, left - 1, -1):
+        grid[bottom][c] = 0
+
+
+def _draw_black_bt(top, bottom, left, right, grid):
+    for r in range(bottom, top - 1, -1):
+        grid[r][right] = 0
+
+
+_SPIRAL_DRAW_OPERATIONS = [
+    _draw_black_lr,
+    _draw_black_bt,
+    _draw_black_rl,
+    _draw_black_tb,
+]
+_SPIRAL_START_POSITION = {
+    DiagonalDirection.TL: 0,
+    DiagonalDirection.TR: 1,
+    DiagonalDirection.BR: 2,
+    DiagonalDirection.BL: 3,
+}
+
+
+def _draw_spiral(color, grid, start: DiagonalDirection = DiagonalDirection.TL):
+    result = grid.copy()
+    result.fill(color)
+    max_row, max_col = grid.shape
+    top, bottom, left, right = 1, max_row - 2, 0, max_col - 2
+    operation_offset = _SPIRAL_START_POSITION[start]
+    operations = (
+        _SPIRAL_DRAW_OPERATIONS[operation_offset:]
+        + _SPIRAL_DRAW_OPERATIONS[:operation_offset]
+    )
+
+    while top <= bottom and left <= right:
+        for op in operations:
+            op(top, bottom, left, right, result)
+        top += 2
+        bottom -= 2
+        left += 2
+        right -= 2
+
+    return result
+
+
+def make_spiral_transformation(
+    color: int, start: DiagonalDirection = DiagonalDirection.TL
+) -> Transform:
     def fn(
         grid: Grid, observations: Observations, example: ExampleObservations
     ) -> Grid:
-        grid = grid.copy()
-        grid.fill(color)
-        max_row, max_col = grid.shape
-        top, bottom, left, right = 1, max_row - 2, 0, max_col - 2
-
-        while top <= bottom and left <= right:
-            # Draw black path from left to right
-            for c in range(left, right + 1):
-                grid[top][c] = 0
-
-            # Draw black path downward
-            for r in range(top, bottom + 1):
-                grid[r][right] = 0
-
-            # Draw black path from right to left
-            if top < bottom - 1:
-                for c in range(right, left, -1):
-                    grid[bottom][c] = 0
-
-            # Draw black path upward
-            if left < right:
-                for r in range(bottom, top + 1, -1):
-                    grid[r][left + 1] = 0
-
-            top += 2
-            bottom -= 2
-            left += 2
-            right -= 2
-
-        return grid
+        return _draw_spiral(color, grid, start)
 
     return fn
 
-def make_spiral_transformation_reversed(color: int) -> Transform:
+
+def make_spiral_transformation_reversed(
+    color: int, start: DiagonalDirection = DiagonalDirection.BL
+) -> Transform:
     def fn(
         grid: Grid, observations: Observations, example: ExampleObservations
     ) -> Grid:
-        grid = grid.copy()
-        grid.fill(color)
-        max_row, max_col = grid.shape
-        top, bottom, left, right = 1, max_row - 2, 0, max_col - 2
-
-        #counter clock instead of clockwise
-        while top <= bottom and left <= right:
-            # Draw black path from top to bottom
-            for r in range(top, bottom + 1):
-                grid[r][left] = 0
-
-            # Draw black path from left to right
-            for c in range(left, right + 1):
-                grid[bottom][c] = 0
-
-            # Draw black path from bottom to top
-            if left < right - 1:
-                for r in range(bottom, top, -1):
-                    grid[r][right] = 0
-
-            # Draw black path from right to left
-            if top < bottom:
-                for c in range(right, left, -1):
-                    grid[top][c] = 0
-
-            top += 2
-            bottom -= 2
-            left += 2
-            right -= 2
-
-        return grid
+        return _draw_spiral(color, grid, start)
 
     return fn
+
 
 def crop_to_square_abstraction(
     grid: Grid, observations: Observations, example: ExampleObservations

@@ -13,7 +13,6 @@ from Transformations import (
     grow_one_by_ones,
     make_implicit_divider_operation,
     make_single_divider_overlay_operation,
-    make_spiral_transformation_reversed,
     make_two_cell_line_connection,
     make_two_divider_overlay_operation,
     mirror_horizontally_vertically_and_diagonally,
@@ -77,7 +76,7 @@ from Observations import (
     check_two_single_cells_on_rim,
     check_consistent_output_grid_size,
 )
-from Enums import AxisDirection, Direction, LogicalOperation
+from Enums import AxisDirection, DiagonalDirection, Direction, LogicalOperation
 
 ARC_COLORS = range(10)
 
@@ -249,25 +248,15 @@ ALL_THEORIES: list[TheoryDef] = [
     # color theories
     *[
         TheoryDef(
-            f"spiral_color_{color}",
+            f"spiral_color_{color}_{start.value}",
             lambda observations, c=color: bool(
                 observations.all_inputs_empty and observations.single_output_color == c
             ),
-            [make_spiral_transformation(color)],
+            [make_spiral_transformation(color, start)],
             [collect_shapes, check_color_sets],
         )
         for color in ARC_COLORS
-    ],
-    *[
-        TheoryDef(
-            f"spiral_color_reversed_{color}",
-            lambda observations, c=color: bool(
-                observations.all_inputs_empty and observations.single_output_color == c
-            ),
-            [make_spiral_transformation_reversed(color)],
-            [collect_shapes, check_color_sets],
-        )
-        for color in ARC_COLORS
+        for start in DiagonalDirection
     ],
     *[
         TheoryDef(
@@ -528,7 +517,12 @@ ALL_THEORIES: list[TheoryDef] = [
                 and observations.grid_size_stays_identical
             ),
             [expand_enclosing_shapes],
-            [collect_shapes, check_enclosing_shapes, check_grid_sizes, check_color_sets],
+            [
+                collect_shapes,
+                check_enclosing_shapes,
+                check_grid_sizes,
+                check_color_sets,
+            ],
         )
     ],
 ]
