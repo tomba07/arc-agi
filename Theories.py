@@ -155,7 +155,7 @@ ALL_THEORIES: list[TheoryDef] = [
     # size-changing theories
     TheoryDef(
         "crop_to_content",
-        lambda observations: bool(observations.single_shape_everywhere),
+        lambda observations: bool(observations.grid_size_decreases),
         [crop_to_content],
         [collect_shapes],
     ),
