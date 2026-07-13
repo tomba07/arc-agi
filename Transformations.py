@@ -159,24 +159,64 @@ def _draw_spiral(color, grid, start: DiagonalDirection = DiagonalDirection.TL):
     return result
 
 
-def make_spiral_transformation(
-    color: int, start: DiagonalDirection = DiagonalDirection.TL
-) -> Transform:
+def make_spiral_transformation(color: int, rotation: int = 0) -> Transform:
     def fn(
         grid: Grid, observations: Observations, example: ExampleObservations
     ) -> Grid:
-        return _draw_spiral(color, grid, start)
+        result = grid.copy()
+        result.fill(color)
+        work = np.rot90(result, k=rotation)
+        max_row, max_col = work.shape
+        top, bottom, left, right = 1, max_row - 2, 0, max_col - 2
+
+        while top <= bottom and left <= right:
+            for c in range(left, right + 1):
+                work[top][c] = 0
+            for r in range(top, bottom + 1):
+                work[r][right] = 0
+            if top < bottom - 1:
+                for c in range(right, left, -1):
+                    work[bottom][c] = 0
+            if left < right:
+                for r in range(bottom, top + 1, -1):
+                    work[r][left + 1] = 0
+            top += 2
+            bottom -= 2
+            left += 2
+            right -= 2
+
+        return np.rot90(work, k=-rotation)
 
     return fn
 
 
-def make_spiral_transformation_reversed(
-    color: int, start: DiagonalDirection = DiagonalDirection.BL
-) -> Transform:
+def make_spiral_transformation_reversed(color: int, rotation: int = 0) -> Transform:
     def fn(
         grid: Grid, observations: Observations, example: ExampleObservations
     ) -> Grid:
-        return _draw_spiral(color, grid, start)
+        result = grid.copy()
+        result.fill(color)
+        work = np.rot90(result, k=rotation)
+        max_row, max_col = work.shape
+        top, bottom, left, right = 1, max_row - 2, 0, max_col - 2
+
+        while top <= bottom and left <= right:
+            for r in range(top, bottom + 1):
+                work[r][left] = 0
+            for c in range(left, right + 1):
+                work[bottom][c] = 0
+            if left < right - 1:
+                for r in range(bottom, top, -1):
+                    work[r][right] = 0
+            if top < bottom:
+                for c in range(right, left, -1):
+                    work[top][c] = 0
+            top += 2
+            bottom -= 2
+            left += 2
+            right -= 2
+
+        return np.rot90(work, k=-rotation)
 
     return fn
 
