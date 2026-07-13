@@ -17,6 +17,7 @@ from Transformations import (
     move_inner_shapes_outward_vertical,
     move_inner_shapes_outward,
     move_one_by_ones_to_same_colored_wall,
+    overlay_if_no_overlap,
     print_two_by_two_color_count,
     put_shapes_into_bottom_gaps,
     remove_non_enclosed_single_cells,
@@ -462,6 +463,17 @@ ALL_THEORIES: list[TheoryDef] = [
             [collect_shapes, check_color_sets],
         )
         for color in ARC_COLORS
+    ],
+    *[
+        TheoryDef(
+            "overlay_if_no_overlap",
+            lambda observations: bool(
+                observations.has_single_horizontal_divider_everywhere
+                or observations.has_single_vertical_divider_everywhere
+            ),
+            [overlay_if_no_overlap],
+            [check_dividers],
+        )
     ],
 ]
 

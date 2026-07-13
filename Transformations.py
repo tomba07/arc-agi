@@ -1003,7 +1003,11 @@ def make_two_cell_line_connection(start_color: int) -> Transform:
         grid: Grid, observations: Observations, example: ExampleObservations
     ) -> Grid:
         result = grid.copy()
-        colors = example.input_colors if example.input_colors is not None else (set(np.unique(example.input_grid)) - {0})
+        colors = (
+            example.input_colors
+            if example.input_colors is not None
+            else (set(np.unique(example.input_grid)) - {0})
+        )
         shapes = example.input_shapes
 
         if start_color not in colors or len(colors) != 2 or len(shapes) != 2:
@@ -1054,12 +1058,34 @@ def make_two_cell_line_connection(start_color: int) -> Transform:
     return fn
 
 
-# def connect_two_cells_with_line_reversed(grid: Grid, observations: Observations, example: ExampleObservations) -> Grid:
-#     #we always start with
-#     color1 = next(iter(example.input_colors))
-#     color2 = next(iter(example.input_colors - {color1}))
-#     line_color = next(iter(example.consistent_new_output_colors))
-#     shape1 = example.input_shapes[0]
-#     shape2 = example.input_shapes[1]
+def overlay_if_no_overlap(
+    grid: Grid, observations: Observations, example: ExampleObservations
+) -> Grid:
+    horizontal_divider = example.single_horizontal_divider
+    vertical_divider = example.single_vertical_divider
 
-#     #we try starting at shape1, then we try shape2
+    def overlay_subgrids_if_no_overlap(grid1, grid2):
+        result = grid1.copy()
+
+        for cell in np.argwhere(grid1 != 0):
+            if grid2[cell[0], cell[1]] != 0:
+                return result  # overlap: return left half unchanged
+
+        for cell in np.argwhere(grid2 != 0):
+            result[cell[0], cell[1]] = grid2[cell[0], cell[1]]
+
+        return result
+
+    if horizontal_divider:
+        mid = grid.shape[0] // 2
+        grid1 = grid[:mid, :]
+        grid2 = grid[mid + 1 :, :]
+
+        return overlay_subgrids_if_no_overlap(grid1, grid2)
+
+    elif vertical_divider:
+        mid = grid.shape[1] // 2
+        grid1 = grid[:, :mid]
+        grid2 = grid[:, mid + 1 :]
+
+        return overlay_subgrids_if_no_overlap(grid1, grid2)
