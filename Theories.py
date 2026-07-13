@@ -13,6 +13,7 @@ from Transformations import (
     grow_one_by_ones,
     make_implicit_divider_operation,
     make_single_divider_overlay_operation,
+    make_spiral_transformation_reversed,
     make_two_cell_line_connection,
     make_two_divider_overlay_operation,
     mirror_horizontally_vertically_and_diagonally,
@@ -253,6 +254,17 @@ ALL_THEORIES: list[TheoryDef] = [
                 observations.all_inputs_empty and observations.single_output_color == c
             ),
             [make_spiral_transformation(color)],
+            [collect_shapes, check_color_sets],
+        )
+        for color in ARC_COLORS
+    ],
+    *[
+        TheoryDef(
+            f"spiral_color_reversed_{color}",
+            lambda observations, c=color: bool(
+                observations.all_inputs_empty and observations.single_output_color == c
+            ),
+            [make_spiral_transformation_reversed(color)],
             [collect_shapes, check_color_sets],
         )
         for color in ARC_COLORS

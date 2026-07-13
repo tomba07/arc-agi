@@ -140,6 +140,43 @@ def make_spiral_transformation(color: int) -> Transform:
 
     return fn
 
+def make_spiral_transformation_reversed(color: int) -> Transform:
+    def fn(
+        grid: Grid, observations: Observations, example: ExampleObservations
+    ) -> Grid:
+        grid = grid.copy()
+        grid.fill(color)
+        max_row, max_col = grid.shape
+        top, bottom, left, right = 1, max_row - 2, 0, max_col - 2
+
+        #counter clock instead of clockwise
+        while top <= bottom and left <= right:
+            # Draw black path from top to bottom
+            for r in range(top, bottom + 1):
+                grid[r][left] = 0
+
+            # Draw black path from left to right
+            for c in range(left, right + 1):
+                grid[bottom][c] = 0
+
+            # Draw black path from bottom to top
+            if left < right - 1:
+                for r in range(bottom, top, -1):
+                    grid[r][right] = 0
+
+            # Draw black path from right to left
+            if top < bottom:
+                for c in range(right, left, -1):
+                    grid[top][c] = 0
+
+            top += 2
+            bottom -= 2
+            left += 2
+            right -= 2
+
+        return grid
+
+    return fn
 
 def crop_to_square_abstraction(
     grid: Grid, observations: Observations, example: ExampleObservations
