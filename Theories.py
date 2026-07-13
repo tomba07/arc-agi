@@ -10,6 +10,7 @@ from Transformations import (
     grow_one_by_ones,
     make_implicit_divider_operation,
     make_single_divider_overlay_operation,
+    make_two_cell_line_connection,
     make_two_divider_overlay_operation,
     mirror_single_enclosed_shape,
     move_inner_shapes_outward_horizontal,
@@ -448,6 +449,19 @@ ALL_THEORIES: list[TheoryDef] = [
             [grow_and_connect_single_cells],
             [collect_shapes, check_color_sets],
         )
+    ],
+    *[
+        TheoryDef(
+            f"make_two_cell_line_connection_starting_{color}",
+            lambda observations: bool(
+                # two
+                observations.all_inputs_only_one_by_ones
+                and len(observations.consistent_new_output_colors) == 1
+            ),
+            [make_two_cell_line_connection(color)],
+            [collect_shapes, check_color_sets],
+        )
+        for color in ARC_COLORS
     ],
 ]
 

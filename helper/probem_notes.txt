@@ -35,7 +35,7 @@ X cf98881b: h dividers & right to left overlay
 X dc433765: move green 1 closer to yellow (diag allowed)
 X e98196ab: v divider & overlay (no overlap)
 X f8a8fe49: extract from brackets
-f35d900a: expand dots with other color and build connector lines
+X f35d900a: expand dots with other color and build connector lines
 
 -----------
 MS D
@@ -48,7 +48,7 @@ X 81c0276b: 2x2 squares of certain colors counted. Number of squares represented
 X 195ba7dc: Horizontal divider and logical OR.
 2546ccf6: Certain shapes have three out of four rotations. Fourth one gets added at according location.
 X 18419cfa: Enclosed shapes are mirrored either horizontally or vertically.
-992798f6: Two cells are connected with line.
+X 992798f6: Two cells are connected with line.
 bbb1b8b6: Content of divided subgrids is overlayed. If there are overlapping cells, the content of the second subgrid is discarded.
 bcb3040b: Two cells of identical color are connected with line. Line has different color on occupied cells.
 c8b7cc0f: Enclosed colored cells are counted and written into 3x3 output from top left to bottom right.

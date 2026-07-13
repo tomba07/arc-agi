@@ -640,6 +640,10 @@ def grow_one_by_ones(
     result = grid.copy()
     new_color = next(iter(observations.consistent_new_output_colors), None)
 
+    # prerequisites
+    if grid.shape[1] < 3 or grid.shape[0] < 3:
+        return result
+
     for shape in example.input_shapes:
         if shape.is_one_by_one:
             row, col = shape.row, shape.col
@@ -647,7 +651,13 @@ def grow_one_by_ones(
                 for dc in [-1, 0, 1]:
                     new_row, new_col = row + dr, col + dc
 
-                    result[new_row, new_col] = new_color
+                    if (
+                        new_row >= 0
+                        and new_row < result.shape[0]
+                        and new_col >= 0
+                        and new_col < result.shape[1]
+                    ):
+                        result[new_row, new_col] = new_color
     return result
 
 
@@ -923,13 +933,19 @@ def move_inner_shapes_outward(
         return move_inner_shapes_outward_horizontal(grid, observations, example)
     return move_inner_shapes_outward_vertical(grid, observations, example)
 
-def grow_and_connect_single_cells(grid: Grid, observations: Observations, example: ExampleObservations) -> Grid:
+
+def grow_and_connect_single_cells(
+    grid: Grid, observations: Observations, example: ExampleObservations
+) -> Grid:
     offsets = [-1, 0, 1]
     result = grid.copy()
-    
+
+    if grid.shape[0] < 3 or grid.shape[1] < 3:
+        return result
+
     input_colors = set(np.unique(grid)) - {0}
-    
-    #grow 1x1 to 3x3 with opposite color
+
+    # grow 1x1 to 3x3 with opposite color
     for shape in example.input_shapes:
         if shape.width == 1 and shape.height == 1:
             new_color = (input_colors - {shape.color}).pop()
@@ -942,17 +958,22 @@ def grow_and_connect_single_cells(grid: Grid, observations: Observations, exampl
                         new_row = row + row_offset
                         new_col = col + col_offset
 
-                        if 0 <= new_row < result.shape[0] and 0 <= new_col < result.shape[1]:
+                        if (
+                            0 <= new_row < result.shape[0]
+                            and 0 <= new_col < result.shape[1]
+                        ):
                             result[new_row, new_col] = new_color
 
-    #build connections between horiz or vertically aligned 3x3 shapes with new output color
+    # build connections between horiz or vertically aligned 3x3 shapes with new output color
     connector_color = next(iter(observations.consistent_new_output_colors))
-    
+
     for i, shape in enumerate(example.input_shapes):
         for j, other_shape in enumerate(example.input_shapes):
-            if i != j and (shape.row == other_shape.row or shape.col == other_shape.col):
+            if i != j and (
+                shape.row == other_shape.row or shape.col == other_shape.col
+            ):
                 is_horizontal = shape.row == other_shape.row
-                
+
                 if is_horizontal:
                     start_col = min(shape.col, other_shape.col) + 2
                     end_col = max(shape.col, other_shape.col) - 2
@@ -975,3 +996,70 @@ def grow_and_connect_single_cells(grid: Grid, observations: Observations, exampl
                         end_row -= 2
 
     return result
+
+
+def make_two_cell_line_connection(start_color: int) -> Transform:
+    def fn(
+        grid: Grid, observations: Observations, example: ExampleObservations
+    ) -> Grid:
+        result = grid.copy()
+        colors = example.input_colors if example.input_colors is not None else (set(np.unique(example.input_grid)) - {0})
+        shapes = example.input_shapes
+
+        if start_color not in colors or len(colors) != 2 or len(shapes) != 2:
+            return grid
+
+        end_color = next(iter(colors - {start_color}))
+        line_color = next(iter(observations.consistent_new_output_colors))
+        start_shape = next(shape for shape in shapes if shape.color == start_color)
+        end_shape = next(shape for shape in shapes if shape.color == end_color)
+
+        row_diff = end_shape.row - start_shape.row
+        col_diff = end_shape.col - start_shape.col
+        row_sign = (1 if row_diff > 0 else -1) if row_diff != 0 else 0
+        col_sign = (1 if col_diff > 0 else -1) if col_diff != 0 else 0
+        # stop one step before end_shape in each axis that moves
+        target_row = end_shape.row - row_sign if row_diff != 0 else start_shape.row
+        target_col = end_shape.col - col_sign if col_diff != 0 else start_shape.col
+
+        row, col = start_shape.row, start_shape.col
+        # go diagonal along the minor axis, then straight along the major axis
+        if abs(row_diff) <= abs(col_diff):
+            while row != target_row:
+                row += row_sign
+                col += col_sign
+                if row == end_shape.row and col == end_shape.col:
+                    break
+                result[row, col] = line_color
+            while col != target_col:
+                col += col_sign
+                if row == end_shape.row and col == end_shape.col:
+                    break
+                result[row, col] = line_color
+        else:
+            while col != target_col:
+                row += row_sign
+                col += col_sign
+                if row == end_shape.row and col == end_shape.col:
+                    break
+                result[row, col] = line_color
+            while row != target_row:
+                row += row_sign
+                if row == end_shape.row and col == end_shape.col:
+                    break
+                result[row, col] = line_color
+
+        return result
+
+    return fn
+
+
+# def connect_two_cells_with_line_reversed(grid: Grid, observations: Observations, example: ExampleObservations) -> Grid:
+#     #we always start with
+#     color1 = next(iter(example.input_colors))
+#     color2 = next(iter(example.input_colors - {color1}))
+#     line_color = next(iter(example.consistent_new_output_colors))
+#     shape1 = example.input_shapes[0]
+#     shape2 = example.input_shapes[1]
+
+#     #we try starting at shape1, then we try shape2

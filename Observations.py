@@ -176,7 +176,9 @@ def collect_shapes(observations: Observations) -> None:
     test.input_shape_count = len(test.input_shapes)
     test.input_color_strict_shapes = get_color_strict_shapes(test.input_grid)
     test.input_diagonal_shapes = get_diagonal_shapes(test.input_grid)
-    test.input_color_strict_diagonal_shapes = get_color_strict_diagonal_shapes(test.input_grid)
+    test.input_color_strict_diagonal_shapes = get_color_strict_diagonal_shapes(
+        test.input_grid
+    )
     test.input_has_single_one_by_one_shape = (
         len(test.input_shapes) == 1 and test.input_shapes[0].is_one_by_one
     )
@@ -235,7 +237,7 @@ def check_color_sets(observations: Observations) -> None:
     for ex in observations.example_observations:
         input_colors = set(np.unique(ex.input_grid)) - {0}
         output_colors = set(np.unique(ex.output_grid)) - {0}
-        ex.input_colors  = input_colors
+        ex.input_colors = input_colors
         ex.output_colors = output_colors
         ex.output_colors_count = len(output_colors)
         ex.new_output_colors = output_colors - input_colors
