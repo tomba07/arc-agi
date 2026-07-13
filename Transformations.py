@@ -1020,8 +1020,8 @@ def make_two_cell_line_connection(start_color: int) -> Transform:
 
         row_diff = end_shape.row - start_shape.row
         col_diff = end_shape.col - start_shape.col
-        row_sign = (1 if row_diff > 0 else -1) if row_diff != 0 else 0
-        col_sign = (1 if col_diff > 0 else -1) if col_diff != 0 else 0
+        row_sign = np.sign(row_diff)
+        col_sign = np.sign(col_diff)
         # stop one step before end_shape in each axis that moves
         target_row = end_shape.row - row_sign if row_diff != 0 else start_shape.row
         target_col = end_shape.col - col_sign if col_diff != 0 else start_shape.col
@@ -1089,3 +1089,51 @@ def overlay_if_no_overlap(
         grid2 = grid[:, mid + 1 :]
 
         return overlay_subgrids_if_no_overlap(grid1, grid2)
+
+
+def connect_two_single_cells_on_rim(
+    grid: Grid, observations: Observations, example: ExampleObservations
+) -> Grid:
+    result = grid.copy()
+    occupied_color = next(iter(observations.consistent_new_output_colors), None)
+    rows, cols = grid.shape
+
+    if occupied_color is None:
+        return result
+
+    def is_on_rim(r, c):
+        return r == 0 or c == 0 or r == rows - 1 or c == cols - 1
+
+    cells_by_color: dict = {}
+    for shape in example.input_color_strict_shapes:
+        if (
+            shape.width == 1
+            and shape.height == 1
+            and is_on_rim(shape.row, shape.col)
+            and shape.color != 0
+        ):
+            if shape.color not in cells_by_color:
+                cells_by_color[shape.color] = []
+            cells_by_color[shape.color].append(shape)
+
+    cell_pair = next(
+        (shapes for shapes in cells_by_color.values() if len(shapes) == 2), None
+    )
+
+    if cell_pair is not None:
+        cell1, cell2 = cell_pair
+        row, col = cell1.row, cell1.col
+        row_sign = int(np.sign(cell2.row - cell1.row))
+        col_sign = int(np.sign(cell2.col - cell1.col))
+        row += row_sign
+        col += col_sign
+
+        while row != cell2.row or col != cell2.col:
+            if result[row, col] == 0:
+                result[row, col] = cell1.color
+            else:
+                result[row, col] = occupied_color
+            row += row_sign
+            col += col_sign
+
+    return result

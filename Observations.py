@@ -72,6 +72,7 @@ class ExampleObservations:
     attracted_color: int | None = None
     has_four_horizontally_aligned_shapes: bool = None
     has_four_vertically_aligned_shapes: bool = None
+    has_two_single_cells_on_rim: bool = None
 
 
 @dataclass
@@ -120,6 +121,7 @@ class Observations:
     has_four_horizontally_aligned_shapes_everywhere: bool | None = None
     has_four_vertically_aligned_shapes_everywhere: bool | None = None
     has_four_aligned_shapes_everywhere: bool | None = None
+    has_two_single_cells_on_rim_everywhere: bool | None = None
 
 
 ObservationCheck = Callable[["Observations"], None]
@@ -843,4 +845,43 @@ def check_four_aligned_shapes(observations: Observations) -> None:
     observations.has_four_aligned_shapes_everywhere = all(
         ex.has_four_horizontally_aligned_shapes or ex.has_four_vertically_aligned_shapes
         for ex in observations.example_observations
+    )
+
+
+def check_two_single_cells_on_rim(observations: Observations) -> None:
+    if not observations.shapes_collected:
+        collect_shapes(observations)
+
+    def is_on_rim(shape: Shape, grid: Grid) -> bool:
+        return (
+            shape.row == 0
+            or shape.col == 0
+            or shape.row == grid.shape[0] - 1
+            or shape.col == grid.shape[1] - 1
+        )
+
+    def exactly_two_same_color_rim_cells(example_obs: ExampleObservations) -> bool:
+        grid = example_obs.input_grid
+        from collections import defaultdict
+
+        cells_by_color = defaultdict(int)
+        for shape in example_obs.input_color_strict_shapes:
+            if (
+                shape.width == 1
+                and shape.height == 1
+                and is_on_rim(shape, grid)
+                and shape.color != 0
+            ):
+                cells_by_color[shape.color] += 1
+        return any(count == 2 for count in cells_by_color.values())
+
+    for example in observations.example_observations:
+        example.has_two_single_cells_on_rim = exactly_two_same_color_rim_cells(example)
+
+    test = observations.test_observations
+    test.has_two_single_cells_on_rim = exactly_two_same_color_rim_cells(test)
+
+    observations.has_two_single_cells_on_rim_everywhere = (
+        all(ex.has_two_single_cells_on_rim for ex in observations.example_observations)
+        and test.has_two_single_cells_on_rim
     )

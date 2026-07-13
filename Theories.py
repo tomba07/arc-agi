@@ -5,6 +5,7 @@ from Transformations import (
     Theory,
     cast_rays_from_single_cells,
     connect_similar_shapes,
+    connect_two_single_cells_on_rim,
     fill_enclosing_shapes_with_dominant_color,
     grow_and_connect_single_cells,
     grow_one_by_ones,
@@ -69,6 +70,7 @@ from Observations import (
     check_enclosing_shapes,
     check_recolor_context,
     check_single_enclosed_shape_in_enclosing_shape,
+    check_two_single_cells_on_rim,
 )
 from Enums import AxisDirection, Direction, LogicalOperation
 
@@ -473,6 +475,16 @@ ALL_THEORIES: list[TheoryDef] = [
             ),
             [overlay_if_no_overlap],
             [check_dividers],
+        )
+    ],
+    *[
+        TheoryDef(
+            "connect_two_single_cells_on_rim",
+            lambda observations: bool(
+                observations.has_two_single_cells_on_rim_everywhere
+            ),
+            [connect_two_single_cells_on_rim],
+            [collect_shapes, check_color_sets, check_two_single_cells_on_rim],
         )
     ],
 ]
