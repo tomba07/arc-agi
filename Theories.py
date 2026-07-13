@@ -7,6 +7,7 @@ from Transformations import (
     connect_similar_shapes,
     connect_two_single_cells_on_rim,
     count_enclosed_cells,
+    expand_enclosing_shapes,
     fill_enclosing_shapes_with_dominant_color,
     grow_and_connect_single_cells,
     grow_one_by_ones,
@@ -505,6 +506,17 @@ ALL_THEORIES: list[TheoryDef] = [
             ),
             [count_enclosed_cells],
             [collect_shapes, check_enclosing_shapes, check_consistent_output_grid_size],
+        )
+    ],
+    *[
+        TheoryDef(
+            "expand_enclosing_shapes",
+            lambda observations: bool(
+                observations.has_enclosing_shapes_somewhere
+                and observations.grid_size_stays_identical
+            ),
+            [expand_enclosing_shapes],
+            [collect_shapes, check_enclosing_shapes, check_grid_sizes, check_color_sets],
         )
     ],
 ]

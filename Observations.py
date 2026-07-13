@@ -110,6 +110,7 @@ class Observations:
     has_single_implicit_vertical_divider_everywhere: bool | None = None
     removed_input_color: int | None = None
     has_enclosing_shapes_everywhere: bool | None = None
+    has_enclosing_shapes_somewhere: bool | None = None
     output_height_half_of_width_everywhere: bool | None = None
     is_recolor_context: bool | None = None
     only_similar_input_shapes: bool | None = None
@@ -590,6 +591,10 @@ def check_enclosing_shapes(observations: Observations) -> None:
     else:
         observations.has_enclosing_shapes_everywhere = False
 
+    observations.has_enclosing_shapes_somewhere = (
+        any(ex.has_enclosing_shapes for ex in observations.example_observations)
+        and observations.test_observations.has_enclosing_shapes
+    )
 
 def check_output_height_half_of_width(observations: Observations) -> None:
     for ex in observations.example_observations:

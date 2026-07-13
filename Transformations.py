@@ -1187,3 +1187,65 @@ def count_enclosed_cells(
             result[r, c] = enclosed_color
 
     return result
+
+
+def expand_enclosing_shapes(
+    grid: Grid, observations: Observations, example: ExampleObservations
+) -> Grid:
+    result = grid.copy()
+    enclosing_shapes = example.enclosing_shapes
+    touch_directions = [
+        (-1, -1),
+        (-1, 0),
+        (-1, 1),
+        (0, -1),
+        (0, 1),
+        (1, -1),
+        (1, 0),
+        (1, 1),
+    ]
+
+    def valid_row_and_col(row, col):
+        return 0 <= row < grid.shape[0] and 0 <= col < grid.shape[1]
+
+    if len(enclosing_shapes) == 0:
+        return result
+
+    # derive new colors from the first example that has enclosing shapes
+    new_colors = None
+    for ex in observations.example_observations:
+        if ex.has_enclosing_shapes and ex.new_output_colors:
+            new_colors = ex.new_output_colors
+            first_example_output = ex.output_grid
+            break
+
+    if not new_colors or len(new_colors) < 2:
+        return result
+
+    color_counts = {c: int(np.sum(first_example_output == c)) for c in new_colors}
+    dominant_color = max(color_counts, key=lambda c: color_counts[c])
+    other_color = next(c for c in new_colors if c != dominant_color)
+    enclosing_shape_color = enclosing_shapes[0].color
+
+    # inner
+    for enclosed_shape in example.enclosed_zero_shapes:
+        for cell in enclosed_shape.cells:
+            for row_diff, col_diff in touch_directions:
+                new_row = cell[0] + row_diff
+                new_col = cell[1] + col_diff
+                if valid_row_and_col(new_row, new_col):
+                    if grid[new_row][new_col] == enclosing_shape_color:
+                        result[cell[0], cell[1]] = other_color
+                        break
+
+    # outer
+    for enclosing_shape in enclosing_shapes:
+        for border_cell in enclosing_shape.cells:
+            for row_diff, col_diff in touch_directions:
+                new_row = border_cell[0] + row_diff
+                new_col = border_cell[1] + col_diff
+                if valid_row_and_col(new_row, new_col):
+                    if result[new_row, new_col] == 0:
+                        result[new_row, new_col] = dominant_color
+
+    return result
