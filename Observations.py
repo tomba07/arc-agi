@@ -49,6 +49,7 @@ class ExampleObservations:
     opposing_same_color_single_cells: list[tuple[Shape, Shape]] | None = None
     spaceship_shape: Spaceship_Shape | None = None
     output_twice_as_large_as_input: bool = False
+    output_thrice_as_large_as_input: bool = False
     single_horizontal_divider: bool = False
     two_horizontal_dividers: bool = False
     single_vertical_divider: bool = False
@@ -100,6 +101,7 @@ class Observations:
     has_opposing_same_color_single_cells_everywhere: bool | None = None
     has_spaceship_shape_everywhere: bool | None = None
     all_outputs_twice_as_large_as_inputs: bool | None = None
+    all_outputs_thrice_as_large_as_inputs: bool | None = None
     has_single_horizontal_divider_everywhere: bool | None = None
     has_two_horizontal_dividers_everywhere: bool | None = None
     has_single_vertical_divider_everywhere: bool | None = None
@@ -228,8 +230,15 @@ def check_output_size_ratio(observations: Observations) -> None:
             ex.output_grid.shape[0] == 2 * ex.input_grid.shape[0]
             and ex.output_grid.shape[1] == 2 * ex.input_grid.shape[1]
         )
+        ex.output_thrice_as_large_as_input = (
+            ex.output_grid.shape[0] == 3 * ex.input_grid.shape[0]
+            and ex.output_grid.shape[1] == 3 * ex.input_grid.shape[1]
+        )
     observations.all_outputs_twice_as_large_as_inputs = all(
         ex.output_twice_as_large_as_input for ex in observations.example_observations
+    )
+    observations.all_outputs_thrice_as_large_as_inputs = all(
+        ex.output_thrice_as_large_as_input for ex in observations.example_observations
     )
 
 

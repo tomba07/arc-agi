@@ -14,6 +14,7 @@ from Transformations import (
     make_single_divider_overlay_operation,
     make_two_cell_line_connection,
     make_two_divider_overlay_operation,
+    mirror_horizontally_vertically_and_diagonally,
     mirror_single_enclosed_shape,
     move_inner_shapes_outward_horizontal,
     move_inner_shapes_outward_vertical,
@@ -93,6 +94,12 @@ ALL_THEORIES: list[TheoryDef] = [
         "mirror_horizontally_and_vertically",
         lambda observations: bool(observations.all_outputs_twice_as_large_as_inputs),
         [mirror_horizontally_and_vertically],
+        [check_output_size_ratio],
+    ),
+    TheoryDef(
+        "tile_with_mirrors",
+        lambda observations: bool(observations.all_outputs_thrice_as_large_as_inputs),
+        [mirror_horizontally_vertically_and_diagonally],
         [check_output_size_ratio],
     ),
     TheoryDef(

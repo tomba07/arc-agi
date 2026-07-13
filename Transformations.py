@@ -307,6 +307,21 @@ def mirror_horizontally_and_vertically(
     return np.vstack([top, bottom])
 
 
+def mirror_horizontally_vertically_and_diagonally(
+    grid: Grid, observations: Observations, example: ExampleObservations
+) -> Grid:
+    mirrored_horizontally = np.flipud(grid)
+    mirrored_vertically = np.fliplr(grid)
+    mirrored_diagonally = np.rot90(grid, 2)
+    return np.block(
+        [
+            [mirrored_diagonally, mirrored_horizontally, mirrored_diagonally],
+            [mirrored_vertically, grid, mirrored_vertically],
+            [mirrored_diagonally, mirrored_horizontally, mirrored_diagonally],
+        ]
+    )
+
+
 def make_divider_operation(operation: LogicalOperation) -> Transform:
     def fn(
         grid: Grid, observations: Observations, example: ExampleObservations
