@@ -122,6 +122,7 @@ class Observations:
     has_four_vertically_aligned_shapes_everywhere: bool | None = None
     has_four_aligned_shapes_everywhere: bool | None = None
     has_two_single_cells_on_rim_everywhere: bool | None = None
+    consistent_output_grid_size: tuple[int, int] | None = None
 
 
 ObservationCheck = Callable[["Observations"], None]
@@ -885,3 +886,15 @@ def check_two_single_cells_on_rim(observations: Observations) -> None:
         all(ex.has_two_single_cells_on_rim for ex in observations.example_observations)
         and test.has_two_single_cells_on_rim
     )
+
+
+def check_consistent_output_grid_size(observations: Observations) -> None:
+    result = observations.example_observations[0].output_grid.shape
+
+    for example in observations.example_observations:
+        example_output_size = example.output_grid.shape
+        if example_output_size != result:
+            result = None
+            break
+
+    observations.consistent_output_grid_size = result

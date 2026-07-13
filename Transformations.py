@@ -1137,3 +1137,38 @@ def connect_two_single_cells_on_rim(
             col += col_sign
 
     return result
+
+
+def count_enclosed_cells(
+    grid: Grid, observations: Observations, example: ExampleObservations
+) -> Grid:
+    if not observations.consistent_output_grid_size:
+        return grid
+
+    if len(example.enclosing_shapes) != 1:
+        return grid
+
+    enclosing_shape = example.enclosing_shapes[0]
+    if not enclosing_shape.enclosed_cells:
+        return grid
+
+    enclosed_color = None
+    count = 0
+    for row, col in enclosing_shape.enclosed_cells:
+        v = grid[row, col]
+        if v != 0:
+            if enclosed_color is None:
+                enclosed_color = v
+            count += 1
+
+    if enclosed_color is None:
+        return grid
+
+    result = np.zeros(observations.consistent_output_grid_size)
+    for i in range(count):
+        r = i // result.shape[1]
+        c = i % result.shape[1]
+        if r < result.shape[0]:
+            result[r, c] = enclosed_color
+
+    return result
