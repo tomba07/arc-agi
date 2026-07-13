@@ -1,3 +1,5 @@
+Issues: 1cf80156, 28e73c20, d687bc17, f8a8fe49, 60a26a3e
+
 -----------
 MS B
 -----------
@@ -54,5 +56,5 @@ X bcb3040b: Two cells of identical color are connected with line. Line has diffe
 X c8b7cc0f: Enclosed colored cells are counted and written into 3x3 output from top left to bottom right.
 c1990cce: Central red cell will form a roof shape in output. Blue diagonals are drawn underneath roof shape.
 X c48954c1: Input will be mirrored to create symmetric output grid.
-d931c21c: Outline of enclosing shapes grow inwards and outwards with different colors.
+X d931c21c: Outline of enclosing shapes grow inwards and outwards with different colors.
 e9b4f6fc: two-by-two cells provide color change information. Large square shape represents area which is cropped.

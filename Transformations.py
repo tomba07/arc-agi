@@ -80,7 +80,7 @@ def swap_colors(
 def crop_to_content(
     grid: Grid, observations: Observations, example: ExampleObservations
 ) -> Grid:
-    shapes = _get_shapes(example)
+    shapes = example.input_diagonal_shapes
     if not shapes:
         return grid
     min_row = min(s.row for s in shapes)
