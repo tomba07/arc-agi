@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 import numpy as np
 
-from Enums import Direction
+from Enums import DiagonalDirection, Direction
 
 Grid = np.ndarray
 
@@ -27,6 +27,7 @@ class Shape:
     enclosed_cells: set[tuple[int, int]] | None = None
     enclosed_shapes: list["Shape"] = field(default_factory=list)
     is_wall: bool = False
+    missing_diagonal_mirror: DiagonalDirection | None = None
 
     # method which returns True
     def is_similar_to(self, other: "Shape") -> bool:

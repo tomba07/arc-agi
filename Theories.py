@@ -3,6 +3,7 @@ from typing import Callable
 
 from Transformations import (
     Theory,
+    add_missing_mirrored_shape,
     cast_rays_from_single_cells,
     connect_similar_shapes,
     connect_two_single_cells_on_rim,
@@ -59,6 +60,7 @@ from Observations import (
     check_four_aligned_shapes,
     check_grid_sizes,
     check_implicit_color_dividers,
+    check_missing_mirrored_shapes,
     check_only_similar_input_shapes,
     check_two_dividers,
     check_walls,
@@ -354,7 +356,12 @@ ALL_THEORIES: list[TheoryDef] = [
         "connect_similar_shapes",
         lambda observations: bool(observations.only_similar_input_shapes),
         [connect_similar_shapes],
-        [collect_shapes, check_only_similar_input_shapes, check_color_sets, check_zero_shapes],
+        [
+            collect_shapes,
+            check_only_similar_input_shapes,
+            check_color_sets,
+            check_zero_shapes,
+        ],
     ),
     TheoryDef(
         "put_shapes_in_bottom_gaps",
@@ -559,6 +566,14 @@ ALL_THEORIES: list[TheoryDef] = [
             ),
             [crop_and_color_change_reversed],
             [collect_shapes, check_color_change_indicators],
+        )
+    ],
+    *[
+        TheoryDef(
+            "missing_mirrored_shape",
+            lambda observations: bool(observations.missing_mirrored_exist_everywhere),
+            [add_missing_mirrored_shape],
+            [collect_shapes, check_missing_mirrored_shapes],
         )
     ],
 ]

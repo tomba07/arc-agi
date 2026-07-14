@@ -75,6 +75,7 @@ class ExampleObservations:
     has_four_vertically_aligned_shapes: bool = None
     has_two_single_cells_on_rim: bool = None
     color_change_indicator_shapes: list[Shape] | None = None
+    missing_mirrored_exist: bool | None = None
 
 
 @dataclass
@@ -128,6 +129,7 @@ class Observations:
     has_two_single_cells_on_rim_everywhere: bool | None = None
     consistent_output_grid_size: tuple[int, int] | None = None
     color_change_indicator_shapes_everywhere: bool | None = None
+    missing_mirrored_exist_everywhere: bool | None = None
 
 
 ObservationCheck = Callable[["Observations"], None]
@@ -942,4 +944,123 @@ def check_color_change_indicators(observations: Observations) -> None:
             ex.color_change_indicator_shapes for ex in observations.example_observations
         )
         and observations.test_observations.color_change_indicator_shapes is not None
+    )
+
+
+def check_missing_mirrored_shapes(observations: Observations) -> None:
+    def check_missing_mirrored_shape(example: ExampleObservations):
+        for shape in example.input_color_strict_diagonal_shapes:
+            row = shape.row
+            col = shape.col
+            width = shape.width
+            height = shape.height
+            mirrored_left = False
+            mirrored_top = False
+            mirrored_right = False
+            mirrored_bot = False
+
+            subgrid = example.input_grid[row : row + height, col : col + width]
+
+            # check if it is mirrord to left (with one cell distance)
+            if col - width - 1 >= 0:
+                left_subgrid = example.input_grid[
+                    row : row + height, col - width - 1 : col - 1
+                ]
+                mirrored_left_subgrid = np.fliplr(left_subgrid)
+
+                if np.array_equal(subgrid, mirrored_left_subgrid):
+                    mirrored_left = True
+
+            # check if it is mirrord to top
+            if row - height - 1 >= 0:
+                top_subgrid = example.input_grid[
+                    row - height - 1 : row - 1, col : col + width
+                ]
+                mirrored_top_subgrid = np.flipud(top_subgrid)
+                if np.array_equal(subgrid, mirrored_top_subgrid):
+                    mirrored_top = True
+
+            # check if it is mirrord to right
+            if col + width + 1 <= example.input_grid.shape[1]:
+                right_subgrid = example.input_grid[
+                    row : row + height, col + width + 1 : col + 2 * width + 1
+                ]
+                mirrored_right_subgrid = np.fliplr(right_subgrid)
+                if np.array_equal(subgrid, mirrored_right_subgrid):
+                    mirrored_right = True
+
+            # check if it is mirrord to bot
+            if row + height + 1 <= example.input_grid.shape[0]:
+                bot_subgrid = example.input_grid[
+                    row + height + 1 : row + 2 * height + 1, col : col + width
+                ]
+                mirrored_bot_subgrid = np.flipud(bot_subgrid)
+                if np.array_equal(subgrid, mirrored_bot_subgrid):
+                    mirrored_bot = True
+
+            if mirrored_top and mirrored_left:
+                # check diagonal: topleft
+                if row - height - 1 >= 0 and col - width - 1 >= 0:
+                    topleft_subgrid = example.input_grid[
+                        row - height - 1 : row, col - width - 1 : col
+                    ]
+                    mirrored_topleft_subgrid = np.flipud(np.fliplr(topleft_subgrid))
+                    if not np.array_equal(subgrid, mirrored_topleft_subgrid):
+                        shape.missing_diagonal_mirror = DiagonalDirection.TL
+            elif mirrored_top and mirrored_right:
+                # check diagonal: topright
+                if (
+                    row - height - 1 >= 0
+                    and col + width + 1 <= example.input_grid.shape[1]
+                ):
+                    topright_subgrid = example.input_grid[
+                        row - height - 1 : row, col + width + 1 : col + 2 * width + 1
+                    ]
+                    mirrored_topright_subgrid = np.flipud(np.fliplr(topright_subgrid))
+                    if not np.array_equal(subgrid, mirrored_topright_subgrid):
+                        shape.missing_diagonal_mirror = DiagonalDirection.TR
+            elif mirrored_bot and mirrored_left:
+                # check diagonal: bottomleft
+                if (
+                    row + height + 1 <= example.input_grid.shape[0]
+                    and col - width - 1 >= 0
+                ):
+                    bottomleft_subgrid = example.input_grid[
+                        row + height + 1 : row + 2 * height + 1, col - width - 1 : col
+                    ]
+                    mirrored_bottomleft_subgrid = np.flipud(
+                        np.fliplr(bottomleft_subgrid)
+                    )
+                    if not np.array_equal(subgrid, mirrored_bottomleft_subgrid):
+                        shape.missing_diagonal_mirror = DiagonalDirection.BL
+            elif mirrored_bot and mirrored_right:
+                # check diagonal: bottomright
+                if (
+                    row + height + 1 <= example.input_grid.shape[0]
+                    and col + width + 1 <= example.input_grid.shape[1]
+                ):
+                    bottomright_subgrid = example.input_grid[
+                        row + height + 1 : row + 2 * height + 1,
+                        col + width + 1 : col + 2 * width + 1,
+                    ]
+                    mirrored_bottomright_subgrid = np.flipud(
+                        np.fliplr(bottomright_subgrid)
+                    )
+                    if not np.array_equal(subgrid, mirrored_bottomright_subgrid):
+                        shape.missing_diagonal_mirror = DiagonalDirection.BR
+
+        if any(
+            shape.missing_diagonal_mirror is not None
+            for shape in (example.input_color_strict_diagonal_shapes or [])
+        ):
+            example.missing_mirrored_exist = True
+
+    for example in observations.example_observations:
+        check_missing_mirrored_shape(example)
+
+    check_missing_mirrored_shape(observations.test_observations)
+
+    observations.missing_mirrored_exist_everywhere = (
+        all(ex.missing_mirrored_exist for ex in observations.example_observations)
+        and observations.test_observations.missing_mirrored_exist
     )

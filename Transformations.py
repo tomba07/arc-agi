@@ -1404,3 +1404,37 @@ def crop_and_color_change_reversed(
                 result[row, col] = color_change_data[result[row, col]]
 
     return result
+
+
+def add_missing_mirrored_shape(
+    grid: Grid, observations: Observations, example: ExampleObservations
+) -> Grid:
+    result = grid.copy()
+
+    for shape in example.input_color_strict_diagonal_shapes or []:
+        missing_mirror = getattr(shape, "missing_diagonal_mirror", None)
+        if missing_mirror is None:
+            continue
+
+        row, col, height, width = shape.row, shape.col, shape.height, shape.width
+        subgrid = grid[row : row + height, col : col + width]
+        mirrored = np.flipud(np.fliplr(subgrid))
+
+        if missing_mirror == DiagonalDirection.TL:
+            new_row, new_col = row - height - 1, col - width - 1
+        elif missing_mirror == DiagonalDirection.TR:
+            new_row, new_col = row - height - 1, col + width + 1
+        elif missing_mirror == DiagonalDirection.BL:
+            new_row, new_col = row + height + 1, col - width - 1
+        else:  # BR
+            new_row, new_col = row + height + 1, col + width + 1
+
+        if (
+            0 <= new_row
+            and new_row + height <= result.shape[0]
+            and 0 <= new_col
+            and new_col + width <= result.shape[1]
+        ):
+            result[new_row : new_row + height, new_col : new_col + width] = mirrored
+
+    return result
