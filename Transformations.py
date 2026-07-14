@@ -1377,8 +1377,11 @@ def crop_and_color_change_reversed(
 
     color_change_data = {}
     for shape in indicator_shapes:
-        (row1, col1), (row2, col2) = sorted(shape.cells, key=lambda c: c[1])
-        color_change_data[grid[row1, col1]] = grid[row2, col2]
+        cells = sorted(shape.cells)
+        colors = [grid[r, c] for r, c in cells]
+        color1 = colors[0]
+        color2 = next(c for c in colors if c != color1)
+        color_change_data[color1] = color2
 
     main_shape = next(
         (
