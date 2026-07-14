@@ -4,6 +4,7 @@ from typing import Callable
 from Transformations import (
     Theory,
     add_missing_mirrored_shape,
+    add_roof_and_stripes,
     cast_rays_from_single_cells,
     connect_similar_shapes,
     connect_two_single_cells_on_rim,
@@ -59,6 +60,7 @@ from Observations import (
     check_color_change_indicators,
     check_four_aligned_shapes,
     check_grid_sizes,
+    check_grid_width_becomes_height,
     check_implicit_color_dividers,
     check_missing_mirrored_shapes,
     check_only_similar_input_shapes,
@@ -574,6 +576,16 @@ ALL_THEORIES: list[TheoryDef] = [
             lambda observations: bool(observations.missing_mirrored_exist_everywhere),
             [add_missing_mirrored_shape],
             [collect_shapes, check_missing_mirrored_shapes],
+        )
+    ],
+    *[
+        TheoryDef(
+            "roof_and_stripes",
+            lambda observations: bool(
+                observations.grid_width_becomes_height_everywhere
+            ),
+            [add_roof_and_stripes],
+            [collect_shapes, check_color_sets, check_grid_width_becomes_height],
         )
     ],
 ]

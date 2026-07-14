@@ -76,6 +76,7 @@ class ExampleObservations:
     has_two_single_cells_on_rim: bool = None
     color_change_indicator_shapes: list[Shape] | None = None
     missing_mirrored_exist: bool | None = None
+    grid_width_becomes_height: bool | None = None
 
 
 @dataclass
@@ -130,6 +131,7 @@ class Observations:
     consistent_output_grid_size: tuple[int, int] | None = None
     color_change_indicator_shapes_everywhere: bool | None = None
     missing_mirrored_exist_everywhere: bool | None = None
+    grid_width_becomes_height_everywhere: bool | None = None
 
 
 ObservationCheck = Callable[["Observations"], None]
@@ -1063,4 +1065,30 @@ def check_missing_mirrored_shapes(observations: Observations) -> None:
     observations.missing_mirrored_exist_everywhere = (
         all(ex.missing_mirrored_exist for ex in observations.example_observations)
         and observations.test_observations.missing_mirrored_exist
+    )
+
+
+def check_grid_width_becomes_height(observations: Observations):
+    def check_example(example: ExampleObservations):
+        input_grid_height, input_grid_width = example.input_grid.shape
+        output_grid_height = (
+            example.output_grid.shape[0] if example.output_grid is not None else None
+        )
+
+        if output_grid_height is not None and (
+            input_grid_height != output_grid_height
+            and input_grid_width == output_grid_height
+        ):
+            example.grid_width_becomes_height = True
+
+    for example in observations.example_observations:
+        check_example(example)
+
+    test = observations.test_observations
+    input_h, input_w = test.input_grid.shape
+    test.grid_width_becomes_height = input_h != input_w  # square output expected
+
+    observations.grid_width_becomes_height_everywhere = (
+        all(ex.grid_width_becomes_height for ex in observations.example_observations)
+        and test.grid_width_becomes_height
     )

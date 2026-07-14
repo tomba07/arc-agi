@@ -1438,3 +1438,40 @@ def add_missing_mirrored_shape(
             result[new_row : new_row + height, new_col : new_col + width] = mirrored
 
     return result
+
+
+def add_roof_and_stripes(
+    grid: Grid, observations: Observations, example: ExampleObservations
+) -> Grid:
+    input_grid_width = grid.shape[1]
+    result = np.zeros((input_grid_width, input_grid_width), dtype=int)
+
+    old_color = next(iter(example.input_colors or (set(np.unique(grid)) - {0})), None)
+    new_color = next(iter(observations.consistent_new_output_colors or []), None)
+
+    if old_color and new_color:
+        # build roof starting from top
+        left = right = input_grid_width // 2
+        row = 0
+        while left >= 0 and right < input_grid_width:
+            result[row][left] = old_color
+            if right != left:
+                result[row][right] = old_color
+            left -= 1
+            right += 1
+            row += 1
+
+        # build stripes starting from (3, pos-1), step (+2, -2)
+        starting_row = 3
+        starting_col = input_grid_width // 2 - 1
+        while starting_row < input_grid_width:
+            row = starting_row + max(0, -starting_col)
+            col = max(0, starting_col)
+            while row < input_grid_width and col < input_grid_width:
+                result[row][col] = new_color
+                row += 1
+                col += 1
+            starting_row += 2
+            starting_col -= 2
+
+    return result
