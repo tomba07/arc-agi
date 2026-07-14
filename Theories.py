@@ -354,7 +354,7 @@ ALL_THEORIES: list[TheoryDef] = [
         "connect_similar_shapes",
         lambda observations: bool(observations.only_similar_input_shapes),
         [connect_similar_shapes],
-        [collect_shapes, check_only_similar_input_shapes, check_color_sets],
+        [collect_shapes, check_only_similar_input_shapes, check_color_sets, check_zero_shapes],
     ),
     TheoryDef(
         "put_shapes_in_bottom_gaps",

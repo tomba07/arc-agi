@@ -570,11 +570,10 @@ def connect_similar_shapes(
     new_color = next(iter(new_colors))
 
     result = grid.copy()
-    shape_cells = set()
-    for s in shapes:
-        for r in range(s.row, s.row + s.height):
-            for c in range(s.col, s.col + s.width):
-                shape_cells.add((r, c))
+    shape_cells = {cell for s in shapes for cell in s.cells}
+
+    for zero_shape in example.enclosed_zero_shapes or []:
+        shape_cells |= zero_shape.cells
 
     for shape in shapes:
         center_row = shape.row + shape.height // 2
@@ -1367,6 +1366,7 @@ def crop_and_color_change(
                 result[row, col] = color_change_data[result[row, col]]
 
     return result
+
 
 def crop_and_color_change_reversed(
     grid: Grid, observations: Observations, example: ExampleObservations
