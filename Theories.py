@@ -8,6 +8,7 @@ from Transformations import (
     connect_two_single_cells_on_rim,
     count_enclosed_cells,
     crop_and_color_change,
+    crop_and_color_change_reversed,
     expand_enclosing_shapes,
     fill_enclosing_shapes_with_dominant_color,
     grow_and_connect_single_cells,
@@ -547,6 +548,16 @@ ALL_THEORIES: list[TheoryDef] = [
                 observations.color_change_indicator_shapes_everywhere
             ),
             [crop_and_color_change],
+            [collect_shapes, check_color_change_indicators],
+        )
+    ],
+    *[
+        TheoryDef(
+            "crop_and_color_change_indicators_reversed",
+            lambda observations: bool(
+                observations.color_change_indicator_shapes_everywhere
+            ),
+            [crop_and_color_change_reversed],
             [collect_shapes, check_color_change_indicators],
         )
     ],

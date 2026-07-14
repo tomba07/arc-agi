@@ -921,15 +921,13 @@ def check_color_change_indicators(observations: Observations) -> None:
     def find_indicators(example_obs: ExampleObservations) -> list | None:
         indicators = []
         for shape in example_obs.input_shapes or []:
-            if shape.width == 2 and shape.height == 1:
-                cells = sorted(shape.cells, key=lambda c: c[1])
-                if len(cells) == 2:
-                    (row1, col1), (row2, col2) = cells
-                    if (
-                        example_obs.input_grid[row1, col1]
-                        != example_obs.input_grid[row2, col2]
-                    ):
-                        indicators.append(shape)
+            cells = sorted(shape.cells)
+            colors = [example_obs.input_grid[r, c] for r, c in cells]
+            unique_colors = set(colors)
+            if len(unique_colors) == 2:
+                counts = {color: colors.count(color) for color in unique_colors}
+                if len(set(counts.values())) == 1:  # equal count of each color
+                    indicators.append(shape)
         return indicators or None
 
     for example in observations.example_observations:

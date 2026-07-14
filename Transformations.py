@@ -1340,8 +1340,45 @@ def crop_and_color_change(
 
     color_change_data = {}
     for shape in indicator_shapes:
+        cells = sorted(shape.cells)
+        colors = [grid[r, c] for r, c in cells]
+        color1 = colors[0]
+        color2 = next(c for c in colors if c != color1)
+        color_change_data[color2] = color1
+
+    main_shape = next(
+        (
+            shape
+            for shape in (example.input_shapes or [])
+            if shape not in indicator_shapes
+        ),
+        None,
+    )
+    if main_shape is None:
+        return grid
+
+    row = main_shape.row
+    col = main_shape.col
+    result = grid[row : row + main_shape.height, col : col + main_shape.width].copy()
+
+    for row in range(result.shape[0]):
+        for col in range(result.shape[1]):
+            if result[row, col] in color_change_data:
+                result[row, col] = color_change_data[result[row, col]]
+
+    return result
+
+def crop_and_color_change_reversed(
+    grid: Grid, observations: Observations, example: ExampleObservations
+) -> Grid:
+    indicator_shapes = example.color_change_indicator_shapes
+    if not indicator_shapes:
+        return grid
+
+    color_change_data = {}
+    for shape in indicator_shapes:
         (row1, col1), (row2, col2) = sorted(shape.cells, key=lambda c: c[1])
-        color_change_data[grid[row2, col2]] = grid[row1, col1]
+        color_change_data[grid[row1, col1]] = grid[row2, col2]
 
     main_shape = next(
         (
