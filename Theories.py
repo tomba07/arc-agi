@@ -7,6 +7,7 @@ from Transformations import (
     connect_similar_shapes,
     connect_two_single_cells_on_rim,
     count_enclosed_cells,
+    crop_and_color_change,
     expand_enclosing_shapes,
     fill_enclosing_shapes_with_dominant_color,
     grow_and_connect_single_cells,
@@ -53,6 +54,7 @@ from Observations import (
     Observations,
     ObservationCheck,
     check_bottom_gaps,
+    check_color_change_indicators,
     check_four_aligned_shapes,
     check_grid_sizes,
     check_implicit_color_dividers,
@@ -536,6 +538,16 @@ ALL_THEORIES: list[TheoryDef] = [
                 check_grid_sizes,
                 check_color_sets,
             ],
+        )
+    ],
+    *[
+        TheoryDef(
+            "crop_and_color_change_indicators",
+            lambda observations: bool(
+                observations.color_change_indicator_shapes_everywhere
+            ),
+            [crop_and_color_change],
+            [collect_shapes, check_color_change_indicators],
         )
     ],
 ]

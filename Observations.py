@@ -74,6 +74,7 @@ class ExampleObservations:
     has_four_horizontally_aligned_shapes: bool = None
     has_four_vertically_aligned_shapes: bool = None
     has_two_single_cells_on_rim: bool = None
+    color_change_indicator_shapes: list[Shape] | None = None
 
 
 @dataclass
@@ -126,6 +127,7 @@ class Observations:
     has_four_aligned_shapes_everywhere: bool | None = None
     has_two_single_cells_on_rim_everywhere: bool | None = None
     consistent_output_grid_size: tuple[int, int] | None = None
+    color_change_indicator_shapes_everywhere: bool | None = None
 
 
 ObservationCheck = Callable[["Observations"], None]
@@ -596,6 +598,7 @@ def check_enclosing_shapes(observations: Observations) -> None:
         and observations.test_observations.has_enclosing_shapes
     )
 
+
 def check_output_height_half_of_width(observations: Observations) -> None:
     for ex in observations.example_observations:
         ex.output_height_half_of_width = (
@@ -912,3 +915,33 @@ def check_consistent_output_grid_size(observations: Observations) -> None:
             break
 
     observations.consistent_output_grid_size = result
+
+
+def check_color_change_indicators(observations: Observations) -> None:
+    def find_indicators(example_obs: ExampleObservations) -> list | None:
+        indicators = []
+        for shape in example_obs.input_shapes or []:
+            if shape.width == 2 and shape.height == 1:
+                cells = sorted(shape.cells, key=lambda c: c[1])
+                if len(cells) == 2:
+                    (row1, col1), (row2, col2) = cells
+                    if (
+                        example_obs.input_grid[row1, col1]
+                        != example_obs.input_grid[row2, col2]
+                    ):
+                        indicators.append(shape)
+        return indicators or None
+
+    for example in observations.example_observations:
+        example.color_change_indicator_shapes = find_indicators(example)
+
+    observations.test_observations.color_change_indicator_shapes = find_indicators(
+        observations.test_observations
+    )
+
+    observations.color_change_indicator_shapes_everywhere = (
+        all(
+            ex.color_change_indicator_shapes for ex in observations.example_observations
+        )
+        and observations.test_observations.color_change_indicator_shapes is not None
+    )
