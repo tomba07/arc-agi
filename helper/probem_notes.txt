@@ -1,4 +1,4 @@
-Issues: 28e73c20, d687bc17, f8a8fe49, c1990cce (full), 2546ccf6 (full), 60a26a3e, e9b4f6fc
+Issues: 28e73c20, d687bc17, f8a8fe49, 60a26a3e, e9b4f6fc
 
 -----------
 MS B
