@@ -98,7 +98,43 @@ class TheoryDef:
 
 
 ALL_THEORIES: list[TheoryDef] = [
-    # single-observation, single-transform theories
+    # ── 1. Pure geometric transforms (no shape analysis needed) ──────────────
+    TheoryDef(
+        "rotate_90",
+        lambda observations: bool(observations.grid_size_stays_identical),
+        [rotate_90],
+        [check_grid_sizes],
+    ),
+    TheoryDef(
+        "rotate_180",
+        lambda observations: bool(observations.grid_size_stays_identical),
+        [rotate_180],
+        [check_grid_sizes],
+    ),
+    TheoryDef(
+        "rotate_270",
+        lambda observations: bool(observations.grid_size_stays_identical),
+        [rotate_270],
+        [check_grid_sizes],
+    ),
+    TheoryDef(
+        "transpose",
+        lambda observations: bool(observations.grid_size_stays_identical),
+        [transpose],
+        [check_grid_sizes],
+    ),
+    TheoryDef(
+        "mirror_across_horizontal_axis",
+        lambda observations: bool(observations.grid_size_stays_identical),
+        [mirror_across_horizontal_axis],
+        [check_grid_sizes],
+    ),
+    TheoryDef(
+        "rotate_90_mirror",
+        lambda observations: bool(observations.grid_size_stays_identical),
+        [rotate_90, mirror_across_horizontal_axis],
+        [check_grid_sizes],
+    ),
     TheoryDef(
         "mirror_horizontally_and_vertically",
         lambda observations: bool(observations.all_outputs_twice_as_large_as_inputs),
@@ -111,56 +147,32 @@ ALL_THEORIES: list[TheoryDef] = [
         [mirror_horizontally_vertically_and_diagonally],
         [check_output_size_ratio],
     ),
+    # ── 2. Simple color transforms ───────────────────────────────────────────
     TheoryDef(
-        "fill_with_increasing_rows",
-        lambda observations: bool(observations.output_height_half_of_width_everywhere),
-        [fill_with_increasing_rows],
-        [check_output_height_half_of_width],
+        "swap_colors",
+        lambda observations: bool(observations.grid_size_stays_identical),
+        [swap_colors],
+        [check_grid_sizes],
     ),
-    TheoryDef(
-        "connect_opposing_cells",
-        lambda observations: bool(
-            observations.has_opposing_same_color_single_cells_everywhere
-        ),
-        [connect_same_color_opposing_cells],
-        [collect_shapes, check_opposing_cells],
-    ),
-    TheoryDef(
-        "cast_uni_ray",
-        lambda observations: bool(
-            observations.consistent_two_by_two_uni_ray_direction_by_color
-        ),
-        [cast_uni_ray_from_two_by_twos],
-        [collect_shapes, check_two_by_two_rays],
-    ),
-    TheoryDef(
-        "beam_from_spaceship",
-        lambda observations: bool(observations.has_spaceship_shape_everywhere),
-        [create_beam_from_spaceship_tip],
-        [collect_shapes, check_spaceship],
-    ),
-    # same-size geometric transforms
     *[
         TheoryDef(
-            name,
-            lambda observations: bool(
-                observations.grid_size_stays_identical and observations.shapes_collected
-            ),
-            transforms,
-            [check_grid_sizes, collect_shapes],
+            f"removed_recolor_{color}",
+            lambda observations, color=color: observations.removed_input_color == color,
+            [make_recolor_transformation(color, 0)],
+            [check_removed_color],
         )
-        for name, transforms in [
-            ("rotate_90", [rotate_90]),
-            ("rotate_180", [rotate_180]),
-            ("rotate_270", [rotate_270]),
-            ("mirror_across_horizontal_axis", [mirror_across_horizontal_axis]),
-            ("swap_colors", [swap_colors]),
-            ("make_hollow", [make_hollow]),
-            ("rotate_90_mirror", [rotate_90, mirror_across_horizontal_axis]),
-            ("transpose", [transpose]),
-        ]
+        for color in ARC_COLORS
     ],
-    # size-changing theories
+    *[
+        TheoryDef(
+            f"removed_swap_recolor_{color}",
+            lambda observations, color=color: observations.removed_input_color == color,
+            [swap_colors, make_recolor_transformation(color, 0)],
+            [check_removed_color],
+        )
+        for color in ARC_COLORS
+    ],
+    # ── 3. Size-changing / crop theories ─────────────────────────────────────
     TheoryDef(
         "crop_to_content",
         lambda observations: bool(observations.grid_size_decreases),
@@ -181,32 +193,6 @@ ALL_THEORIES: list[TheoryDef] = [
         [crop_to_square_abstraction, recolor_to_square_abstraction],
         [collect_shapes, check_square_abstraction],
     ),
-    TheoryDef(
-        "cast_rays_from_single_cells",
-        lambda observations: bool(
-            observations.input_has_single_one_by_one_shape_everywhere
-            and not observations.output_has_single_one_by_one_shape_everywhere
-        ),
-        [cast_rays_from_single_cells],
-        [collect_shapes],
-    ),
-    TheoryDef(
-        "grow_one_by_ones",
-        lambda observations: bool(
-            observations.all_inputs_only_one_by_ones
-            and not observations.output_has_single_one_by_one_shape_everywhere
-            and observations.consistent_new_output_colors is not None
-            and len(observations.consistent_new_output_colors) == 1
-        ),
-        [grow_one_by_ones],
-        [collect_shapes, check_color_sets],
-    ),
-    TheoryDef(
-        "move_one_by_ones_to_same_colored_wall",
-        lambda observations: bool(observations.has_four_walls_everywhere),
-        [move_one_by_ones_to_same_colored_wall],
-        [collect_shapes, check_walls],
-    ),
     *[
         TheoryDef(
             f"arrange_colored_cells_{direction.value}_{increasing}",
@@ -220,7 +206,7 @@ ALL_THEORIES: list[TheoryDef] = [
         for direction in AxisDirection
         for increasing in (True, False)
     ],
-    # structural / divider theories
+    # ── 4. Divider / structural theories ─────────────────────────────────────
     *[
         TheoryDef(
             f"divider_{op.value}",
@@ -253,143 +239,6 @@ ALL_THEORIES: list[TheoryDef] = [
         )
         for op in LogicalOperation
     ],
-    # color theories
-    *[
-        TheoryDef(
-            f"spiral_color_{color}_rot{rotation}",
-            lambda observations, c=color: bool(
-                observations.all_inputs_empty and observations.single_output_color == c
-            ),
-            [make_spiral_transformation(color, rotation)],
-            [collect_shapes, check_color_sets],
-        )
-        for color in ARC_COLORS
-        for rotation in range(4)
-    ],
-    *[
-        TheoryDef(
-            f"spiral_color_reversed_{color}_rot{rotation}",
-            lambda observations, c=color: bool(
-                observations.all_inputs_empty and observations.single_output_color == c
-            ),
-            [make_spiral_transformation_reversed(color, rotation)],
-            [collect_shapes, check_color_sets],
-        )
-        for color in ARC_COLORS
-        for rotation in range(4)
-    ],
-    *[
-        TheoryDef(
-            f"removed_recolor_{color}",
-            lambda observations, color=color: observations.removed_input_color == color,
-            [make_recolor_transformation(color, 0)],
-            [check_removed_color],
-        )
-        for color in ARC_COLORS
-    ],
-    *[
-        TheoryDef(
-            f"removed_swap_recolor_{color}",
-            lambda observations, color=color: observations.removed_input_color == color,
-            [swap_colors, make_recolor_transformation(color, 0)],
-            [check_removed_color],
-        )
-        for color in ARC_COLORS
-    ],
-    TheoryDef(
-        "recolor_by_enclosure",
-        lambda observations: bool(
-            observations.two_new_output_colors_everywhere
-            and observations.enclosed_zero_shapes_everywhere
-            and observations.non_enclosed_zero_shapes_everywhere
-        ),
-        [make_recolor_by_enclosure_transformation(flip_colors=False)],
-        [check_color_sets, check_zero_shapes],
-    ),
-    TheoryDef(
-        "recolor_by_enclosure_flipped",
-        lambda observations: bool(
-            observations.two_new_output_colors_everywhere
-            and observations.enclosed_zero_shapes_everywhere
-            and observations.non_enclosed_zero_shapes_everywhere
-        ),
-        [make_recolor_by_enclosure_transformation(flip_colors=True)],
-        [check_color_sets, check_zero_shapes],
-    ),
-    TheoryDef(
-        "change_enclosing_shapes_color",
-        lambda observations: (
-            bool(observations.has_enclosing_shapes_everywhere)
-            and observations.consistent_new_output_colors is not None
-            and len(observations.consistent_new_output_colors) == 1
-        ),
-        [change_enclosing_shapes_color],
-        [check_color_sets, collect_shapes, check_enclosing_shapes],
-    ),
-    # recolor pair theories — broadest fallback, checked last
-    *[
-        TheoryDef(
-            f"recolor_{from_color}_to_{to_color}",
-            lambda observations, from_color=from_color, to_color=to_color: (
-                bool(observations.is_recolor_context)
-                and (
-                    observations.consistent_removed_colors is None
-                    or observations.consistent_new_output_colors is None
-                    or (
-                        from_color in observations.consistent_removed_colors
-                        and to_color in observations.consistent_new_output_colors
-                    )
-                )
-            ),
-            [make_recolor_transformation(from_color, to_color)],
-            [check_recolor_context, check_color_sets],
-        )
-        for from_color in ARC_COLORS
-        for to_color in ARC_COLORS
-        if from_color != to_color
-    ],
-    TheoryDef(
-        "fill_enclosing_shapes_with_dominant_color",
-        lambda observations: bool(observations.has_enclosing_shapes_everywhere),
-        [fill_enclosing_shapes_with_dominant_color, remove_non_enclosed_single_cells],
-        [collect_shapes, check_enclosing_shapes],
-    ),
-    TheoryDef(
-        "connect_similar_shapes",
-        lambda observations: bool(observations.only_similar_input_shapes),
-        [connect_similar_shapes],
-        [
-            collect_shapes,
-            check_only_similar_input_shapes,
-            check_color_sets,
-            check_zero_shapes,
-        ],
-    ),
-    TheoryDef(
-        "put_shapes_in_bottom_gaps",
-        lambda observations: bool(observations.bottom_gaps_everywhere),
-        [put_shapes_into_bottom_gaps],
-        [collect_shapes, check_bottom_gaps],
-    ),
-    TheoryDef(
-        "print_two_by_two_color_count",
-        lambda observations: bool(
-            observations.single_non_by_two_shape_everywhere
-            and observations.two_by_twos_everywhere
-        ),
-        [print_two_by_two_color_count],
-        [collect_shapes],
-    ),
-    TheoryDef(
-        "mirror_single_enclosed_shape",
-        lambda observations: bool(observations.has_single_enclosed_shape_everywhere),
-        [mirror_single_enclosed_shape],
-        [
-            collect_shapes,
-            check_enclosing_shapes,
-            check_single_enclosed_shape_in_enclosing_shape,
-        ],
-    ),
     *[
         TheoryDef(
             f"single_horizontal_divider_overlay_{direction.value}",
@@ -434,66 +283,72 @@ ALL_THEORIES: list[TheoryDef] = [
         )
         for direction in [Direction.LEFT, Direction.RIGHT]
     ],
-    *[
-        TheoryDef(
-            "cell_attraction",
-            lambda observations: bool(
-                all(
-                    len(ex.input_shapes) == 2
-                    for ex in observations.example_observations
-                )
-                and observations.test_observations.input_shapes is not None
-                and len(observations.test_observations.input_shapes) == 2
-            ),
-            [single_cell_attraction],
-            [collect_shapes],
-        )
-    ],
-    *[
-        TheoryDef(
-            "move_inner_shapes_outward_horizontal",
-            lambda observations: bool(
-                observations.has_four_horizontally_aligned_shapes_everywhere
-            ),
-            [move_inner_shapes_outward_horizontal],
-            [collect_shapes, check_four_aligned_shapes],
-        )
-    ],
-    *[
-        TheoryDef(
-            "move_inner_shapes_outward_vertical",
-            lambda observations: bool(
-                observations.has_four_vertically_aligned_shapes_everywhere
-            ),
-            [move_inner_shapes_outward_vertical],
-            [collect_shapes, check_four_aligned_shapes],
-        )
-    ],
-    *[
-        TheoryDef(
-            "move_inner_shapes_outward",
-            lambda observations: bool(observations.has_four_aligned_shapes_everywhere),
-            [move_inner_shapes_outward],
-            [collect_shapes, check_four_aligned_shapes],
-        )
-    ],
-    *[
-        TheoryDef(
-            "grow_and_connect",
-            lambda observations: bool(
-                observations.consistent_new_output_colors is not None
-                and len(observations.consistent_new_output_colors) == 1
-                and observations.all_inputs_only_one_by_ones,
-            ),
-            [grow_and_connect_single_cells],
-            [collect_shapes, check_color_sets],
-        )
-    ],
+    TheoryDef(
+        "overlay_if_no_overlap",
+        lambda observations: bool(
+            observations.has_single_horizontal_divider_everywhere
+            or observations.has_single_vertical_divider_everywhere
+        ),
+        [overlay_if_no_overlap],
+        [check_dividers],
+    ),
+    # ── 5. Shape-based theories ───────────────────────────────────────────────
+    TheoryDef(
+        "make_hollow",
+        lambda observations: bool(observations.grid_size_stays_identical),
+        [make_hollow],
+        [check_grid_sizes, collect_shapes],
+    ),
+    TheoryDef(
+        "cast_rays_from_single_cells",
+        lambda observations: bool(
+            observations.input_has_single_one_by_one_shape_everywhere
+            and not observations.output_has_single_one_by_one_shape_everywhere
+        ),
+        [cast_rays_from_single_cells],
+        [collect_shapes],
+    ),
+    TheoryDef(
+        "connect_opposing_cells",
+        lambda observations: bool(
+            observations.has_opposing_same_color_single_cells_everywhere
+        ),
+        [connect_same_color_opposing_cells],
+        [collect_shapes, check_opposing_cells],
+    ),
+    TheoryDef(
+        "connect_two_single_cells_on_rim",
+        lambda observations: bool(
+            observations.has_two_single_cells_on_rim_everywhere
+        ),
+        [connect_two_single_cells_on_rim],
+        [collect_shapes, check_color_sets, check_two_single_cells_on_rim],
+    ),
+    TheoryDef(
+        "grow_one_by_ones",
+        lambda observations: bool(
+            observations.all_inputs_only_one_by_ones
+            and not observations.output_has_single_one_by_one_shape_everywhere
+            and observations.consistent_new_output_colors is not None
+            and len(observations.consistent_new_output_colors) == 1
+        ),
+        [grow_one_by_ones],
+        [collect_shapes, check_color_sets],
+    ),
+    TheoryDef(
+        "grow_and_connect",
+        lambda observations: bool(
+            observations.consistent_new_output_colors is not None
+            and len(observations.consistent_new_output_colors) == 1
+            and observations.all_inputs_only_one_by_ones,
+        ),
+        [grow_and_connect_single_cells],
+        [collect_shapes, check_color_sets],
+    ),
     *[
         TheoryDef(
             f"make_two_cell_line_connection_starting_{color}",
             lambda observations: bool(
-                # two
                 observations.all_inputs_only_one_by_ones
                 and len(observations.consistent_new_output_colors) == 1
             ),
@@ -502,91 +357,226 @@ ALL_THEORIES: list[TheoryDef] = [
         )
         for color in ARC_COLORS
     ],
+    TheoryDef(
+        "move_one_by_ones_to_same_colored_wall",
+        lambda observations: bool(observations.has_four_walls_everywhere),
+        [move_one_by_ones_to_same_colored_wall],
+        [collect_shapes, check_walls],
+    ),
+    TheoryDef(
+        "cell_attraction",
+        lambda observations: bool(
+            all(
+                len(ex.input_shapes) == 2
+                for ex in observations.example_observations
+            )
+            and observations.test_observations.input_shapes is not None
+            and len(observations.test_observations.input_shapes) == 2
+        ),
+        [single_cell_attraction],
+        [collect_shapes],
+    ),
+    TheoryDef(
+        "connect_similar_shapes",
+        lambda observations: bool(observations.only_similar_input_shapes),
+        [connect_similar_shapes],
+        [collect_shapes, check_only_similar_input_shapes, check_color_sets, check_zero_shapes],
+    ),
+    TheoryDef(
+        "put_shapes_in_bottom_gaps",
+        lambda observations: bool(observations.bottom_gaps_everywhere),
+        [put_shapes_into_bottom_gaps],
+        [collect_shapes, check_bottom_gaps],
+    ),
+    TheoryDef(
+        "print_two_by_two_color_count",
+        lambda observations: bool(
+            observations.single_non_by_two_shape_everywhere
+            and observations.two_by_twos_everywhere
+        ),
+        [print_two_by_two_color_count],
+        [collect_shapes],
+    ),
+    TheoryDef(
+        "move_inner_shapes_outward_horizontal",
+        lambda observations: bool(
+            observations.has_four_horizontally_aligned_shapes_everywhere
+        ),
+        [move_inner_shapes_outward_horizontal],
+        [collect_shapes, check_four_aligned_shapes],
+    ),
+    TheoryDef(
+        "move_inner_shapes_outward_vertical",
+        lambda observations: bool(
+            observations.has_four_vertically_aligned_shapes_everywhere
+        ),
+        [move_inner_shapes_outward_vertical],
+        [collect_shapes, check_four_aligned_shapes],
+    ),
+    TheoryDef(
+        "move_inner_shapes_outward",
+        lambda observations: bool(observations.has_four_aligned_shapes_everywhere),
+        [move_inner_shapes_outward],
+        [collect_shapes, check_four_aligned_shapes],
+    ),
+    TheoryDef(
+        "cast_uni_ray",
+        lambda observations: bool(
+            observations.consistent_two_by_two_uni_ray_direction_by_color
+        ),
+        [cast_uni_ray_from_two_by_twos],
+        [collect_shapes, check_two_by_two_rays],
+    ),
+    TheoryDef(
+        "beam_from_spaceship",
+        lambda observations: bool(observations.has_spaceship_shape_everywhere),
+        [create_beam_from_spaceship_tip],
+        [collect_shapes, check_spaceship],
+    ),
+    # ── 6. Enclosure / filling theories ──────────────────────────────────────
+    TheoryDef(
+        "recolor_by_enclosure",
+        lambda observations: bool(
+            observations.two_new_output_colors_everywhere
+            and observations.enclosed_zero_shapes_everywhere
+            and observations.non_enclosed_zero_shapes_everywhere
+        ),
+        [make_recolor_by_enclosure_transformation(flip_colors=False)],
+        [check_color_sets, check_zero_shapes],
+    ),
+    TheoryDef(
+        "recolor_by_enclosure_flipped",
+        lambda observations: bool(
+            observations.two_new_output_colors_everywhere
+            and observations.enclosed_zero_shapes_everywhere
+            and observations.non_enclosed_zero_shapes_everywhere
+        ),
+        [make_recolor_by_enclosure_transformation(flip_colors=True)],
+        [check_color_sets, check_zero_shapes],
+    ),
+    TheoryDef(
+        "change_enclosing_shapes_color",
+        lambda observations: (
+            bool(observations.has_enclosing_shapes_everywhere)
+            and observations.consistent_new_output_colors is not None
+            and len(observations.consistent_new_output_colors) == 1
+        ),
+        [change_enclosing_shapes_color],
+        [check_color_sets, collect_shapes, check_enclosing_shapes],
+    ),
+    TheoryDef(
+        "fill_enclosing_shapes_with_dominant_color",
+        lambda observations: bool(observations.has_enclosing_shapes_everywhere),
+        [fill_enclosing_shapes_with_dominant_color, remove_non_enclosed_single_cells],
+        [collect_shapes, check_enclosing_shapes],
+    ),
+    TheoryDef(
+        "mirror_single_enclosed_shape",
+        lambda observations: bool(observations.has_single_enclosed_shape_everywhere),
+        [mirror_single_enclosed_shape],
+        [collect_shapes, check_enclosing_shapes, check_single_enclosed_shape_in_enclosing_shape],
+    ),
+    TheoryDef(
+        "count_enclosed_cells",
+        lambda observations: bool(
+            observations.has_enclosing_shapes_everywhere
+            and observations.consistent_output_grid_size
+        ),
+        [count_enclosed_cells],
+        [collect_shapes, check_enclosing_shapes, check_consistent_output_grid_size],
+    ),
+    TheoryDef(
+        "expand_enclosing_shapes",
+        lambda observations: bool(
+            observations.has_enclosing_shapes_somewhere
+            and observations.grid_size_stays_identical
+        ),
+        [expand_enclosing_shapes],
+        [collect_shapes, check_enclosing_shapes, check_grid_sizes, check_color_sets],
+    ),
+    # ── 7. Complex / multi-step theories ─────────────────────────────────────
+    TheoryDef(
+        "fill_with_increasing_rows",
+        lambda observations: bool(observations.output_height_half_of_width_everywhere),
+        [fill_with_increasing_rows],
+        [check_output_height_half_of_width],
+    ),
+    TheoryDef(
+        "crop_and_color_change_indicators",
+        lambda observations: bool(
+            observations.color_change_indicator_shapes_everywhere
+        ),
+        [crop_and_color_change],
+        [collect_shapes, check_color_change_indicators],
+    ),
+    TheoryDef(
+        "crop_and_color_change_indicators_reversed",
+        lambda observations: bool(
+            observations.color_change_indicator_shapes_everywhere
+        ),
+        [crop_and_color_change_reversed],
+        [collect_shapes, check_color_change_indicators],
+    ),
+    TheoryDef(
+        "missing_mirrored_shape",
+        lambda observations: bool(observations.missing_mirrored_exist_everywhere),
+        [add_missing_mirrored_shape],
+        [collect_shapes, check_missing_mirrored_shapes],
+    ),
+    TheoryDef(
+        "roof_and_stripes",
+        lambda observations: bool(
+            observations.grid_width_becomes_height_everywhere
+        ),
+        [add_roof_and_stripes],
+        [collect_shapes, check_color_sets, check_grid_width_becomes_height],
+    ),
+    # ── 8. Spiral theories ────────────────────────────────────────────────────
     *[
         TheoryDef(
-            "overlay_if_no_overlap",
-            lambda observations: bool(
-                observations.has_single_horizontal_divider_everywhere
-                or observations.has_single_vertical_divider_everywhere
+            f"spiral_color_{color}_rot{rotation}",
+            lambda observations, c=color: bool(
+                observations.all_inputs_empty and observations.single_output_color == c
             ),
-            [overlay_if_no_overlap],
-            [check_dividers],
+            [make_spiral_transformation(color, rotation)],
+            [collect_shapes, check_color_sets],
         )
+        for color in ARC_COLORS
+        for rotation in range(4)
     ],
     *[
         TheoryDef(
-            "connect_two_single_cells_on_rim",
-            lambda observations: bool(
-                observations.has_two_single_cells_on_rim_everywhere
+            f"spiral_color_reversed_{color}_rot{rotation}",
+            lambda observations, c=color: bool(
+                observations.all_inputs_empty and observations.single_output_color == c
             ),
-            [connect_two_single_cells_on_rim],
-            [collect_shapes, check_color_sets, check_two_single_cells_on_rim],
+            [make_spiral_transformation_reversed(color, rotation)],
+            [collect_shapes, check_color_sets],
         )
+        for color in ARC_COLORS
+        for rotation in range(4)
     ],
+    # ── 9. Broad recolor fallbacks (last resort) ──────────────────────────────
     *[
         TheoryDef(
-            "count_enclosed_cells",
-            lambda observations: bool(
-                observations.has_enclosing_shapes_everywhere
-                and observations.consistent_output_grid_size
+            f"recolor_{from_color}_to_{to_color}",
+            lambda observations, from_color=from_color, to_color=to_color: (
+                bool(observations.is_recolor_context)
+                and (
+                    observations.consistent_removed_colors is None
+                    or observations.consistent_new_output_colors is None
+                    or (
+                        from_color in observations.consistent_removed_colors
+                        and to_color in observations.consistent_new_output_colors
+                    )
+                )
             ),
-            [count_enclosed_cells],
-            [collect_shapes, check_enclosing_shapes, check_consistent_output_grid_size],
+            [make_recolor_transformation(from_color, to_color)],
+            [check_recolor_context, check_color_sets],
         )
-    ],
-    *[
-        TheoryDef(
-            "expand_enclosing_shapes",
-            lambda observations: bool(
-                observations.has_enclosing_shapes_somewhere
-                and observations.grid_size_stays_identical
-            ),
-            [expand_enclosing_shapes],
-            [
-                collect_shapes,
-                check_enclosing_shapes,
-                check_grid_sizes,
-                check_color_sets,
-            ],
-        )
-    ],
-    *[
-        TheoryDef(
-            "crop_and_color_change_indicators",
-            lambda observations: bool(
-                observations.color_change_indicator_shapes_everywhere
-            ),
-            [crop_and_color_change],
-            [collect_shapes, check_color_change_indicators],
-        )
-    ],
-    *[
-        TheoryDef(
-            "crop_and_color_change_indicators_reversed",
-            lambda observations: bool(
-                observations.color_change_indicator_shapes_everywhere
-            ),
-            [crop_and_color_change_reversed],
-            [collect_shapes, check_color_change_indicators],
-        )
-    ],
-    *[
-        TheoryDef(
-            "missing_mirrored_shape",
-            lambda observations: bool(observations.missing_mirrored_exist_everywhere),
-            [add_missing_mirrored_shape],
-            [collect_shapes, check_missing_mirrored_shapes],
-        )
-    ],
-    *[
-        TheoryDef(
-            "roof_and_stripes",
-            lambda observations: bool(
-                observations.grid_width_becomes_height_everywhere
-            ),
-            [add_roof_and_stripes],
-            [collect_shapes, check_color_sets, check_grid_width_becomes_height],
-        )
+        for from_color in ARC_COLORS
+        for to_color in ARC_COLORS
+        if from_color != to_color
     ],
 ]
 
