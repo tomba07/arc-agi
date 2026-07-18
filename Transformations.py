@@ -781,22 +781,26 @@ def move_one_by_ones_to_same_colored_wall(
             if matching_wall:
                 wall_row = matching_wall.row
                 wall_col = matching_wall.col
+                wall_inner_left   = wall_col + matching_wall.width
+                wall_inner_top    = wall_row + matching_wall.height
+                wall_inner_right  = wall_col
+                wall_inner_bottom = wall_row
 
                 # wall is left wall — place shape's left edge just inside wall
                 if wall_col == 0:
-                    result[row : row + shape.height, wall_col + 1 : wall_col + 1 + shape.width] = color
+                    result[row : row + shape.height, wall_inner_left : wall_inner_left + shape.width] = color
 
                 # wall is top wall — place shape's top edge just inside wall
                 elif wall_row == 0:
-                    result[wall_row + 1 : wall_row + 1 + shape.height, col : col + shape.width] = color
+                    result[wall_inner_top : wall_inner_top + shape.height, col : col + shape.width] = color
 
                 # wall is bottom wall — place shape's bottom edge just inside wall
                 elif wall_row + matching_wall.height == result.shape[0]:
-                    result[wall_row - shape.height : wall_row, col : col + shape.width] = color
+                    result[wall_inner_bottom - shape.height : wall_inner_bottom, col : col + shape.width] = color
 
                 # wall is right wall — place shape's right edge just inside wall
                 elif wall_col + matching_wall.width == result.shape[1]:
-                    result[row : row + shape.height, wall_col - shape.width : wall_col] = color
+                    result[row : row + shape.height, wall_inner_right - shape.width : wall_inner_right] = color
 
     return result
 

@@ -787,16 +787,22 @@ def check_walls(observations: Observations) -> None:
         collect_shapes(observations)
 
     def is_wall(shape: Shape, grid: Grid) -> bool:
-        length_correct = (
-            shape.width == grid.shape[1] - 2 or shape.height == grid.shape[0] - 2
-        )
-        width_correct = shape.width == 1 or shape.height == 1
-        position_correct = (
-            shape.row == 0
-            or shape.col == 0
-            or shape.row == grid.shape[0] - 1
-            or shape.col == grid.shape[1] - 1
-        )
+        rows, cols = grid.shape
+        on_left   = shape.col == 0
+        on_right  = shape.col + shape.width == cols
+        on_top    = shape.row == 0
+        on_bottom = shape.row + shape.height == rows
+
+        position_correct = on_left or on_right or on_top or on_bottom
+
+        # wall spans (nearly) the full extent in its long axis
+        if on_left or on_right:
+            length_correct = shape.height >= rows - 2
+            width_correct = shape.width <= 2
+        else:
+            length_correct = shape.width >= cols - 2
+            width_correct = shape.height <= 2
+
         return length_correct and width_correct and position_correct
 
     for example in observations.example_observations:
