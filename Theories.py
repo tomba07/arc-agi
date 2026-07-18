@@ -536,7 +536,7 @@ ALL_THEORIES: list[TheoryDef] = [
         TheoryDef(
             f"spiral_color_{color}_rot{rotation}",
             lambda observations, c=color: bool(
-                observations.all_inputs_empty and observations.single_output_color == c
+                observations.single_output_color == c
             ),
             [make_spiral_transformation(color, rotation)],
             [collect_shapes, check_color_sets],
@@ -548,7 +548,7 @@ ALL_THEORIES: list[TheoryDef] = [
         TheoryDef(
             f"spiral_color_reversed_{color}_rot{rotation}",
             lambda observations, c=color: bool(
-                observations.all_inputs_empty and observations.single_output_color == c
+                observations.single_output_color == c
             ),
             [make_spiral_transformation_reversed(color, rotation)],
             [collect_shapes, check_color_sets],

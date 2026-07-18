@@ -166,20 +166,21 @@ def make_spiral_transformation(color: int, rotation: int = 0) -> Transform:
         result = grid.copy()
         result.fill(color)
         work = np.rot90(result, k=rotation)
+        path_color = int(grid[0, 0])
         max_row, max_col = work.shape
         top, bottom, left, right = 1, max_row - 2, 0, max_col - 2
 
         while top <= bottom and left <= right:
             for c in range(left, right + 1):
-                work[top][c] = 0
+                work[top][c] = path_color
             for r in range(top, bottom + 1):
-                work[r][right] = 0
+                work[r][right] = path_color
             if top < bottom - 1:
                 for c in range(right, left, -1):
-                    work[bottom][c] = 0
+                    work[bottom][c] = path_color
             if left < right:
                 for r in range(bottom, top + 1, -1):
-                    work[r][left + 1] = 0
+                    work[r][left + 1] = path_color
             top += 2
             bottom -= 2
             left += 2
@@ -197,20 +198,21 @@ def make_spiral_transformation_reversed(color: int, rotation: int = 0) -> Transf
         result = grid.copy()
         result.fill(color)
         work = np.rot90(result, k=rotation)
+        path_color = int(grid[0, 0])
         max_row, max_col = work.shape
         top, bottom, left, right = 1, max_row - 2, 0, max_col - 2
 
         while top <= bottom and left <= right:
             for r in range(top, bottom + 1):
-                work[r][left] = 0
+                work[r][left] = path_color
             for c in range(left, right + 1):
-                work[bottom][c] = 0
+                work[bottom][c] = path_color
             if left < right - 1:
                 for r in range(bottom, top, -1):
-                    work[r][right] = 0
+                    work[r][right] = path_color
             if top < bottom:
                 for c in range(right, left, -1):
-                    work[top][c] = 0
+                    work[top][c] = path_color
             top += 2
             bottom -= 2
             left += 2
