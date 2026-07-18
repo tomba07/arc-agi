@@ -772,7 +772,7 @@ def move_one_by_ones_to_same_colored_wall(
                 shape.row : shape.row + shape.height,
                 shape.col : shape.col + shape.width,
             ] = shape.color
-        elif shape.is_one_by_one:
+        elif not shape.is_wall:
             row = shape.row
             col = shape.col
             color = shape.color
@@ -782,21 +782,21 @@ def move_one_by_ones_to_same_colored_wall(
                 wall_row = matching_wall.row
                 wall_col = matching_wall.col
 
-                # wall is left wall
+                # wall is left wall — place shape's left edge just inside wall
                 if wall_col == 0:
-                    result[row, wall_col + 1] = color
+                    result[row : row + shape.height, wall_col + 1 : wall_col + 1 + shape.width] = color
 
-                # wall is top wall
+                # wall is top wall — place shape's top edge just inside wall
                 elif wall_row == 0:
-                    result[wall_row + 1, col] = color
+                    result[wall_row + 1 : wall_row + 1 + shape.height, col : col + shape.width] = color
 
-                # wall is bot wall
+                # wall is bottom wall — place shape's bottom edge just inside wall
                 elif wall_row + matching_wall.height == result.shape[0]:
-                    result[wall_row - 1, col] = color
+                    result[wall_row - shape.height : wall_row, col : col + shape.width] = color
 
-                # wall is right wall
+                # wall is right wall — place shape's right edge just inside wall
                 elif wall_col + matching_wall.width == result.shape[1]:
-                    result[row, wall_col - 1] = color
+                    result[row : row + shape.height, wall_col - shape.width : wall_col] = color
 
     return result
 
